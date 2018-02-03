@@ -14,4 +14,4 @@ build_script:
 test: off
 
 artifacts:
-- path: src/Serilog.Sinks.Syslog/bin/Release/Serilog.Sinks.SyslogMessages.*.nupkg
+- path: src\Serilog.Sinks.Syslog\**\Release\Serilog.Sinks.SyslogMessages.*.nupkg
