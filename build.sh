@@ -1,8 +1,6 @@
 #!/bin/bash
 set -ev
 
-START_DIR=$(PWD)
-
 dotnet restore ./serilog-sinks-syslog.sln --runtime netstandard2.0
 dotnet build ./src/Serilog.Sinks.Syslog/Serilog.Sinks.Syslog.csproj  --runtime netstandard2.0 --configuration Release
 
@@ -10,6 +8,6 @@ dotnet build ./src/Serilog.Sinks.Syslog/Serilog.Sinks.Syslog.csproj  --runtime n
 cd ./test/Serilog.Sinks.Syslog.Tests
 dotnet xunit -framework netcoreapp2.0
 
-cd ${START_DIR}
+cd ${TRAVIS_BUILD_DIR}
 
 dotnet pack ./src/Serilog.Sinks.Syslog -c Release
