@@ -1,0 +1,205 @@
+// Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
+// Ionx Solutions licenses this file to you under the Apache License, 
+// Version 2.0. You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Serilog.Debugging;
+using Serilog.Events;
+using Serilog.Sinks.PeriodicBatching;
+
+namespace Serilog.Sinks.Syslog
+{
+    /// <summary>
+    /// Sink that writes events to a remote syslog service over a TCP connection. Secured
+    // communication using TLS is support
+    /// </summary>
+    public class SyslogTcpSink : PeriodicBatchingSink
+    {
+        private TcpClient client;
+        private Stream stream;
+        private readonly ISyslogFormatter formatter;
+        private readonly MessageFramer framer;
+        private readonly string host;
+        private readonly int port;
+        private readonly bool useTls;
+        private readonly SslProtocols secureProtocols;
+        private readonly X509Certificate2Collection clientCert;
+        private readonly RemoteCertificateValidationCallback certValidationCallback;
+        private bool disposed;
+
+        public SyslogTcpSink(SyslogTcpConfig config, BatchConfig batchConfig)
+            : base(batchConfig.BatchSizeLimit, batchConfig.Period, batchConfig.QueueSizeLimit)
+        {
+            this.formatter = config.Formatter;
+            this.framer = config.Framer;
+            this.host = config.Host;
+            this.port = config.Port;
+
+            this.secureProtocols = config.SecureProtocols;
+            this.useTls = config.SecureProtocols != SslProtocols.None;
+            this.certValidationCallback = config.CertValidationCallback;
+
+            if (config.CertProvider?.Certificate != null)
+            {
+                this.clientCert = new X509Certificate2Collection(new [] { config.CertProvider.Certificate });
+            }
+        }
+
+        /// <summary>
+        /// Emit a batch of log events, running asynchronously.
+        /// </summary>
+        /// <param name="events">The events to send to the syslog service</param>
+        protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
+        {
+            // Throws if not connected and unable to connect (PeriodicBatchingSink will handle retries)
+            await EnsureConnected().ConfigureAwait(false);
+
+            foreach (var logEvent in events)
+            {
+                var message = this.formatter.FormatMessage(logEvent);
+
+                try
+                {
+                    await this.framer.WriteFrame(message, this.stream).ConfigureAwait(false);
+                }
+                catch (SocketException ex)
+                {
+                    // Log and rethrow (PeriodicBatchingSink will handle retries)
+                    SelfLog.WriteLine($"[{nameof(SyslogTcpSink)}] error while sending to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+                    throw;
+                }
+            }
+        }
+
+        protected async Task EnsureConnected()
+        {
+            try
+            {
+                if (IsConnected())
+                    return;
+
+                // Recreate the TCP client
+                this.stream?.Dispose();
+                this.client?.Close();
+                this.client = new TcpClient();
+                this.client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+                // Reduce latency to a minimum
+                this.client.NoDelay = true;
+
+                await this.client.ConnectAsync(this.host, this.port).ConfigureAwait(false);
+
+                this.stream = await GetStream(this.client.GetStream()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Attempt to provide meaningful diagnostic messages for common connection problems
+                HandleConnectError(ex);
+                throw;
+            }
+        }
+
+        private async Task<Stream> GetStream(Stream baseStream)
+        {
+            if (!this.useTls)
+                return baseStream;
+
+            // Authenticate the server, using the provided callback if required
+            var sslStream = this.certValidationCallback != null
+                ? new SslStream(baseStream, true, this.certValidationCallback)
+                : new SslStream(baseStream, true);
+
+            // Authenticate the client, using the provided client certificate if required
+            // Note: this method takes an X509CertificateCollection, rather than an X509Certificate,
+            // but providing the full chain does not actually appear to work for many servers
+            await sslStream.AuthenticateAsClientAsync(this.host, this.clientCert,
+                this.secureProtocols, false).ConfigureAwait(false);
+
+            if (!sslStream.IsAuthenticated)
+                throw new AuthenticationException("Unable to authenticate secure syslog server");
+
+            return sslStream;
+        }
+
+        private bool IsConnected()
+        {
+            if (this.client == null || !this.client.Connected)
+                return false;
+
+            var socket = this.client.Client;
+
+            // Poll will return true if there is no active connection OR if there is an active
+            // connection and there is data waiting to be read
+            return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
+        }
+
+        /// <summary>
+        /// Attempt to provide meaningful diagnostic messages for common connection problems
+        /// </summary>
+        /// <param name="ex">The exception that occured during the failed connection attempt</param>
+        private void HandleConnectError(Exception ex)
+        {
+            var prefix = $"[{nameof(SyslogTcpSink)}]";
+
+            // Server down, blocked by a firewall, unreachable, or malfunctioning
+            if (ex is SocketException socketEx)
+            {
+                var errorCode = socketEx.SocketErrorCode;
+
+                if (errorCode == SocketError.ConnectionRefused)
+                {
+                    SelfLog.WriteLine($"{prefix} connection refused to {this.host}:{this.port} - is the server listening?");
+                }
+                else if (errorCode == SocketError.TimedOut)
+                {
+                    SelfLog.WriteLine($"{prefix} timed out connecting to {this.host}:{this.port} - is a firewall blocking traffic?");
+                }
+                else
+                {
+                    SelfLog.WriteLine($"{prefix} unable to connect to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+                }
+            }
+            else if (ex is AuthenticationException)
+            {
+                // Issue with secure channel negotiation (e.g. protocol mismatch)
+                var details = ex.InnerException?.Message ?? ex.Message;
+                SelfLog.WriteLine($"{prefix} unable to connect to secure server {this.host}:{this.port} - {details}\n{ex.StackTrace}");
+            }
+            else
+            {
+                SelfLog.WriteLine($"{prefix} unable to connect to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+            }
+
+            // Tear down the client
+            this.stream?.Dispose();
+            this.client?.Close();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!this.disposed)
+            {
+                // If disposing == true, we're being called from an inheriting class calling base.Dispose()
+                if (disposing)
+                {
+                    this.stream?.Dispose();
+                    this.stream = null;
+                    this.client?.Close();
+                    this.client = null;
+                }
+
+                this.disposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+}

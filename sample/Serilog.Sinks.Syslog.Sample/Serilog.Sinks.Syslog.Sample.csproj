@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Sample Console Application</Description>
+    <Authors>Ionx Solutions</Authors>
+    <Copyright>Copyright © Ionx Solutions 2018</Copyright>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-x86;linux-x64</RuntimeIdentifiers>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Serilog.Sinks.Syslog.Sample</AssemblyName>
+    <RootNamespace>Serilog.Sinks.Syslog.Sample</RootNamespace>
+    <RepositoryType>git</RepositoryType>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="2.6.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <ProjectReference Include="..\..\src\Serilog.Sinks.Syslog\Serilog.Sinks.Syslog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\build\certs\client.p12">
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
