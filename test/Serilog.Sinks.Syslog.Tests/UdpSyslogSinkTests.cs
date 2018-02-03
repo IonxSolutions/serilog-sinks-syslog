@@ -40,7 +40,7 @@ namespace Serilog.Sinks.Syslog.Tests
             log.Warning("This is test message 2");
             log.Error("This is test message 3");
 
-            await Task.Delay(200);
+            await Task.Delay(1000);
 
             messagesReceived.Count.ShouldBe(3);
             messagesReceived.ShouldContain(x => x.StartsWith("<134>"));

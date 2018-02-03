@@ -56,7 +56,7 @@ namespace Serilog.Sinks.Syslog.Tests
             log.Warning("This is test message 2");
             log.Error("This is test message 3");
 
-            await Task.Delay(200);
+            await Task.Delay(1000);
 
             // The server should have received all 3 messages sent by the sink
             this.messagesReceived.Count.ShouldBe(3);
@@ -94,7 +94,7 @@ namespace Serilog.Sinks.Syslog.Tests
             log.Warning("This is test message 2");
             log.Error("This is test message 3");
 
-            await Task.Delay(200);
+            await Task.Delay(1000);
 
             // The server should have received all 3 messages sent by the sink
             this.messagesReceived.Count.ShouldBe(3);
