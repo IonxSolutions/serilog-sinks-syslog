@@ -15,6 +15,3 @@ test: off
 
 artifacts:
 - path: src/Serilog.Sinks.Syslog/bin/Release/Serilog.Sinks.SyslogMessages.*.nupkg
-
-artifacts:
-- path: '**\Serilog.*.nupkg'
