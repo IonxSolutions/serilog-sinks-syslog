@@ -12,5 +12,3 @@ cd ./test/Serilog.Sinks.Syslog.Tests
 dotnet xunit -framework netcoreapp2.0
 
 cd ${TRAVIS_BUILD_DIR}
-
-dotnet pack ./src/Serilog.Sinks.Syslog -c Release
