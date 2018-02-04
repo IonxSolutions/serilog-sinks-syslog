@@ -12,6 +12,7 @@ using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
 {
+    /// <inheritdoc />
     /// <summary>
     /// Formats messages that comply with syslog RFC5424
     /// https://tools.ietf.org/html/rfc5424

@@ -8,6 +8,7 @@ using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
 {
+    /// <inheritdoc />
     /// <summary>
     /// Formats messages for use with the Linux libc syslog() function. Note that syslog() is only
     /// used to write the 'body' of the message - it takes care of the priority, timestamp etc by

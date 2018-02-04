@@ -10,6 +10,7 @@ using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
 {
+    /// <inheritdoc />
     /// <summary>
     /// Formats messages that comply with syslog RFC3464
     /// https://tools.ietf.org/html/rfc3164
