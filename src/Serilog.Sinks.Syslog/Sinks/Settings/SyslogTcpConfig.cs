@@ -36,6 +36,16 @@ namespace Serilog.Sinks.Syslog
         public MessageFramer Framer { get; set; } = new MessageFramer(FramingType.OCTET_COUNTING);
 
         /// <summary>
+        /// Enables the sending of keep-alive packets at the TCP socket layer. To be useful, keep-alive
+        /// must be supported and enabled by the syslog server.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to false, as it's disabled by default on popular syslog servers such as rsyslog 
+        /// and syslog-ng
+        /// </remarks>
+        public bool KeepAlive { get; set; } = false;
+
+        /// <summary>
         /// Secure protocols to support. If None, the sink will connect to the server over an unsecure
         /// channel. Note that the server must support TLS in order to connect using a secure channel
         /// </summary>

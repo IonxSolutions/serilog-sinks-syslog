@@ -6,8 +6,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -27,21 +30,25 @@ namespace Serilog.Sinks.Syslog
         private Stream stream;
         private readonly ISyslogFormatter formatter;
         private readonly MessageFramer framer;
-        private readonly string host;
-        private readonly int port;
+        private readonly bool enableKeepAlive;
         private readonly bool useTls;
         private readonly SslProtocols secureProtocols;
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
         private bool disposed;
 
+        public string Host { get; }
+        public int Port { get; }
+
+
         public SyslogTcpSink(SyslogTcpConfig config, BatchConfig batchConfig)
             : base(batchConfig.BatchSizeLimit, batchConfig.Period, batchConfig.QueueSizeLimit)
         {
             this.formatter = config.Formatter;
             this.framer = config.Framer;
-            this.host = config.Host;
-            this.port = config.Port;
+            this.Host = config.Host;
+            this.Port = config.Port;
+            this.enableKeepAlive = config.KeepAlive;
 
             this.secureProtocols = config.SecureProtocols;
             this.useTls = config.SecureProtocols != SslProtocols.None;
@@ -50,6 +57,18 @@ namespace Serilog.Sinks.Syslog
             if (config.CertProvider?.Certificate != null)
             {
                 this.clientCert = new X509Certificate2Collection(new [] { config.CertProvider.Certificate });
+            }
+
+            // You can't set socket options *and* connect to an endpoint using a hostname - if
+            // keep-alive is enabled, resolve the hostname to an IP
+            // See https://github.com/dotnet/corefx/issues/26840
+            if (config.KeepAlive && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                if (!IPAddress.TryParse(config.Host, out var addr))
+                {
+                    addr = Dns.GetHostAddresses(config.Host).First(x => x.AddressFamily == AddressFamily.InterNetwork);
+                    this.Host = addr.ToString();
+                }
             }
         }
 
@@ -73,7 +92,7 @@ namespace Serilog.Sinks.Syslog
                 catch (SocketException ex)
                 {
                     // Log and rethrow (PeriodicBatchingSink will handle retries)
-                    SelfLog.WriteLine($"[{nameof(SyslogTcpSink)}] error while sending to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+                    SelfLog.WriteLine($"[{nameof(SyslogTcpSink)}] error while sending to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
                     throw;
                 }
             }
@@ -90,12 +109,20 @@ namespace Serilog.Sinks.Syslog
                 this.stream?.Dispose();
                 this.client?.Close();
                 this.client = new TcpClient();
-                this.client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+                // If we're running on Linux, only try to set keep-alives if they are wanted (in
+                // that case we resolved the hostname to an IP in the ctor)
+                // See https://github.com/dotnet/corefx/issues/26840
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || this.enableKeepAlive)
+                {
+                    this.client.Client.SetSocketOption(SocketOptionLevel.Socket,
+                        SocketOptionName.KeepAlive, this.enableKeepAlive);
+                }
 
                 // Reduce latency to a minimum
                 this.client.NoDelay = true;
 
-                await this.client.ConnectAsync(this.host, this.port).ConfigureAwait(false);
+                await this.client.ConnectAsync(this.Host, this.Port).ConfigureAwait(false);
 
                 this.stream = await GetStream(this.client.GetStream()).ConfigureAwait(false);
             }
@@ -120,7 +147,7 @@ namespace Serilog.Sinks.Syslog
             // Authenticate the client, using the provided client certificate if required
             // Note: this method takes an X509CertificateCollection, rather than an X509Certificate,
             // but providing the full chain does not actually appear to work for many servers
-            await sslStream.AuthenticateAsClientAsync(this.host, this.clientCert,
+            await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
                 this.secureProtocols, false).ConfigureAwait(false);
 
             if (!sslStream.IsAuthenticated)
@@ -156,26 +183,26 @@ namespace Serilog.Sinks.Syslog
 
                 if (errorCode == SocketError.ConnectionRefused)
                 {
-                    SelfLog.WriteLine($"{prefix} connection refused to {this.host}:{this.port} - is the server listening?");
+                    SelfLog.WriteLine($"{prefix} connection refused to {this.Host}:{this.Port} - is the server listening?");
                 }
                 else if (errorCode == SocketError.TimedOut)
                 {
-                    SelfLog.WriteLine($"{prefix} timed out connecting to {this.host}:{this.port} - is a firewall blocking traffic?");
+                    SelfLog.WriteLine($"{prefix} timed out connecting to {this.Host}:{this.Port} - is a firewall blocking traffic?");
                 }
                 else
                 {
-                    SelfLog.WriteLine($"{prefix} unable to connect to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+                    SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
                 }
             }
             else if (ex is AuthenticationException)
             {
                 // Issue with secure channel negotiation (e.g. protocol mismatch)
                 var details = ex.InnerException?.Message ?? ex.Message;
-                SelfLog.WriteLine($"{prefix} unable to connect to secure server {this.host}:{this.port} - {details}\n{ex.StackTrace}");
+                SelfLog.WriteLine($"{prefix} unable to connect to secure server {this.Host}:{this.Port} - {details}\n{ex.StackTrace}");
             }
             else
             {
-                SelfLog.WriteLine($"{prefix} unable to connect to {this.host}:{this.port} - {ex.Message}\n{ex.StackTrace}");
+                SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
             }
 
             // Tear down the client

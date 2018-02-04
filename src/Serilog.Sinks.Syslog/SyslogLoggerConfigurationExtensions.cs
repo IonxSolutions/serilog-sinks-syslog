@@ -155,7 +155,7 @@ namespace Serilog
 
         private static IPEndPoint ResolveIP(string host, int port)
         {
-            if (!IPAddress.TryParse(host, out IPAddress addr))
+            if (!IPAddress.TryParse(host, out var addr))
             {
                 addr = Dns.GetHostAddresses(host).First(x => x.AddressFamily == AddressFamily.InterNetwork);
             }

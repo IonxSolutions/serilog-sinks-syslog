@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -10,6 +10,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using FakeItEasy.Configuration;
 using Xunit;
 using Shouldly;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
@@ -34,6 +35,7 @@ namespace Serilog.Sinks.Syslog.Tests
             {
                 Host = "localhost",
                 Port = this.endpoint.Port,
+                KeepAlive = true,
                 Formatter = new Rfc5424Formatter(Facility.Local0, "TestApp"),
                 Framer = new MessageFramer(FramingType.OCTET_COUNTING)
             };
@@ -75,6 +77,7 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Should_send_logs_to_secure_tcp_syslog_service()
         {
+            this.tcpConfig.KeepAlive = false; // Just to test the negative path
             this.tcpConfig.SecureProtocols = SECURE_PROTOCOLS;
             this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
             this.tcpConfig.CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
@@ -122,6 +125,16 @@ namespace Serilog.Sinks.Syslog.Tests
             sink.Dispose();
             this.cts.Cancel();
             await receiveTask;
+        }
+
+        // You can't set socket options *and* connect to an endpoint using a hostname - if
+        // keep-alive is enabled, resolve the hostname to an IP
+        // See https://github.com/dotnet/corefx/issues/26840
+        [LinuxOnlyFact]
+        public void Should_resolve_hostname_to_ip_on_linux_when_keepalive_enabled()
+        {
+            var sink = new SyslogTcpSink(this.tcpConfig, this.batchConfig);
+            sink.Host.ShouldBe("127.0.0.1");
         }
 
         private static IPEndPoint GetFreeTcpEndPoint()
