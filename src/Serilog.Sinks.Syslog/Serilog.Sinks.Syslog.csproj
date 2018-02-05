@@ -13,9 +13,9 @@
     <PackageId>Serilog.Sinks.SyslogMessages</PackageId>
     <PackageTags>serilog;syslog;logging</PackageTags>
     <PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/IonxSolutions/Serilog.Sinks.Syslog</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/IonxSolutions/serilog-sinks-syslog</PackageProjectUrl>
     <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/IonxSolutions/Serilog.Sinks.Syslog</RepositoryUrl>
+    <RepositoryUrl>https://github.com/IonxSolutions/serilog-sinks-syslog</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
   </PropertyGroup>
