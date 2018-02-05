@@ -2,7 +2,7 @@
 
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/IonxSolutions/serilog-sinks-syslog?svg=true)](https://ci.appveyor.com/project/ionx-solutions/serilog-sinks-syslog)
 [![Linux Build status](https://api.travis-ci.org/IonxSolutions/serilog-sinks-syslog.svg)](https://travis-ci.org/IonxSolutions/serilog-sinks-syslog)
-[![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.SyslogMessage.svg)](https://www.nuget.org/packages/Serilog.Sinks.SyslogMessages)
+[![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.SyslogMessages.svg)](https://www.nuget.org/packages/Serilog.Sinks.SyslogMessages)
 
 A [Serilog](https://serilog.net) sink that logs events to remote syslog servers using both UDP and TCP (including over TLS), and can also use POSIX libc syslog functions to write to the local syslog service on Linux systems. Both RFC3164 and RFC5424 format messages are supported.
 
