@@ -217,4 +217,4 @@ Rsyslog normally defaults to RFC3164 format messages, but can write RFC5424 form
 $ActionFileDefaultTemplate RSYSLOG_SyslogProtocol23Format
 ```
 
-_Copyright &copy; 2018 Ionx Solutions - Provided under the [Apache License, Version 2.0](http://apache.org/licenses/LICENSE-2.0.html)._
+_Copyright &copy; 2018 [Ionx Solutions](https://www.ionxsolutions.com) - Provided under the [Apache License, Version 2.0](http://apache.org/licenses/LICENSE-2.0.html)._
