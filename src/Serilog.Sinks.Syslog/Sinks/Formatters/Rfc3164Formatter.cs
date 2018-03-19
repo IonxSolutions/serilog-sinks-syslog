@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -26,7 +26,7 @@ namespace Serilog.Sinks.Syslog
             this.applicationName = applicationName ?? ProcessName;
 
             // Conform to the RFC
-            this.applicationName = applicationName
+            this.applicationName = this.applicationName
                 .AsPrintableAscii()
                 .WithMaxLength(32);
         }
@@ -37,7 +37,7 @@ namespace Serilog.Sinks.Syslog
 
             // This really is what RFC3164 specifies!
             // "The TIMESTAMP field is the local time and is in the format of "Mmm dd hh:mm:ss"
-            // "If the day of the month is less than 10, then it MUST be represented as 
+            // "If the day of the month is less than 10, then it MUST be represented as
             // a space and then the number"
             var dateFormat = logEvent.Timestamp.Day < 10
                 ? "{0:MMM  d HH:mm:ss}"
@@ -58,7 +58,7 @@ namespace Serilog.Sinks.Syslog
 
         /// <summary>
         /// Get the LogEvent's SourceContext in a format suitable for use as part of the CONTENT field
-        /// of a syslog message (All Serilog property values are quoted and escaped, which is unnecessary 
+        /// of a syslog message (All Serilog property values are quoted and escaped, which is unnecessary
         /// here)
         /// </summary>
         /// <param name="logEvent">The LogEvent to extract the context from</param>

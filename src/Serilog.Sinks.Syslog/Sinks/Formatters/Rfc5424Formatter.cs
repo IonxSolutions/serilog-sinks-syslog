@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -31,7 +31,7 @@ namespace Serilog.Sinks.Syslog
         private const string STRUCTURED_DATA_ID = "meta";
 
         /// <summary>
-        /// RFC5424 mandates the use of a timestamp that is a slightly more constrained version of that specified 
+        /// RFC5424 mandates the use of a timestamp that is a slightly more constrained version of that specified
         /// in RFC3339 (which is in turn based on that of ISO 8601)
         /// </summary>
         /// <remarks>
@@ -47,7 +47,7 @@ namespace Serilog.Sinks.Syslog
             this.applicationName = applicationName ?? ProcessName;
 
             // Conform to the RFC
-            this.applicationName = applicationName
+            this.applicationName = this.applicationName
                 .AsPrintableAscii()
                 .WithMaxLength(48);
         }
@@ -94,7 +94,7 @@ namespace Serilog.Sinks.Syslog
 
         private static string RenderStructuredData(LogEvent logEvent)
         {
-            var properties = logEvent.Properties.Select(kvp => 
+            var properties = logEvent.Properties.Select(kvp =>
                 new KeyValuePair<string, string>(RenderPropertyKey(kvp.Key), RenderPropertyValue(kvp.Value)));
 
             var structuredDataKvps = String.Join(" ", properties.Select(t => $@"{t.Key}=""{t.Value}"""));
@@ -116,7 +116,7 @@ namespace Serilog.Sinks.Syslog
         }
 
         /// <summary>
-        /// All Serilog property values are quoted, which is unnecessary, as we are going to encase them in 
+        /// All Serilog property values are quoted, which is unnecessary, as we are going to encase them in
         /// quotes anyway, to conform to the specification for syslog structured data values - so this
         /// removes them and also unescapes any others
         /// </summary>
