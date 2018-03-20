@@ -38,7 +38,7 @@ namespace Serilog.Sinks.Syslog.Tests
 
         public static string GetFullPath(string filename)
         {
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var baseDir = Path.GetDirectoryName(typeof(Fixture).GetTypeInfo().Assembly.Location);
 
             return Path.Combine(baseDir, filename);
         }

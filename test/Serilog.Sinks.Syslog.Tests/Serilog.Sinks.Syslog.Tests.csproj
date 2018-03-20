@@ -2,9 +2,11 @@
   <PropertyGroup>
     <Authors>Ionx Solutions</Authors>
     <Copyright>Copyright © Ionx Solutions 2018</Copyright>
-    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
+    <TargetFrameworks>netcoreapp1.1;netcoreapp2.0;net462</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
+    <RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp1.1' ">1.1.7</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">2.0.6</RuntimeFrameworkVersion>
     <LangVersion>latest</LangVersion>
-    <RuntimeFrameworkVersion>2.0.5</RuntimeFrameworkVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog.Tests</AssemblyName>
     <RootNamespace>Serilog.Sinks.Syslog.Tests</RootNamespace>
@@ -12,6 +14,7 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />

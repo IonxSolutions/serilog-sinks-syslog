@@ -157,7 +157,8 @@ namespace Serilog
         {
             if (!IPAddress.TryParse(host, out var addr))
             {
-                addr = Dns.GetHostAddresses(host).First(x => x.AddressFamily == AddressFamily.InterNetwork);
+                var ipAddresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+                addr = ipAddresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
             }
 
             return new IPEndPoint(addr, port);

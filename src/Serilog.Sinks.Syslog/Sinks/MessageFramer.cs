@@ -65,7 +65,7 @@ namespace Serilog.Sinks.Syslog
                 }
             }
 
-            await stream.FlushAsync();
+            await stream.FlushAsync().ConfigureAwait(false);
         }
     }
 }

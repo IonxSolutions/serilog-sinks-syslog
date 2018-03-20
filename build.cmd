@@ -5,7 +5,10 @@ dotnet build .\src\Serilog.Sinks.Syslog\Serilog.Sinks.Syslog.csproj --configurat
 
 rem dotnet-xunit is a CLI tool that can only be executed from in the test folder
 cd .\test\Serilog.Sinks.Syslog.Tests
-dotnet xunit
+
+dotnet xunit -framework netcoreapp1.1 -fxversion 1.1.7
+dotnet xunit -framework netcoreapp2.0 -fxversion 2.0.6
+dotnet xunit -framework net462
 
 cd %START_DIR%
 

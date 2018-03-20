@@ -80,10 +80,10 @@ namespace Serilog.Sinks.Syslog.Tests
             this.tcpConfig.KeepAlive = false; // Just to test the negative path
             this.tcpConfig.SecureProtocols = SECURE_PROTOCOLS;
             this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
-            this.tcpConfig.CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            this.tcpConfig.CertValidationCallback = (sender, cert, chain, sslPolicyErrors) =>
             {
                 // So we know this callback was called
-                this.serverCertificate = new X509Certificate2(certificate);
+                this.serverCertificate = new X509Certificate2(cert.Export(X509ContentType.Pkcs12));
                 return true;
             };
 

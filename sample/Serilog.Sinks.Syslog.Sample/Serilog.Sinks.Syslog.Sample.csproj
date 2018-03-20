@@ -5,7 +5,8 @@
     <Authors>Ionx Solutions</Authors>
     <Copyright>Copyright © Ionx Solutions 2018</Copyright>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
+    <TargetFrameworks>netcoreapp1.1;netcoreapp2.0;net462</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x86;win-x64;linux-x86;linux-x64</RuntimeIdentifiers>
     <LangVersion>latest</LangVersion>
     <AssemblyName>Serilog.Sinks.Syslog.Sample</AssemblyName>

@@ -84,7 +84,7 @@ namespace Serilog.Sinks.Syslog.Tests
                 }
             }
 
-            tcpClient.Close();
+            tcpClient.Dispose();
         });
 
         private bool ClientCertValidationCallback(object sender, X509Certificate cert,
@@ -92,7 +92,7 @@ namespace Serilog.Sinks.Syslog.Tests
         {
             if (cert != null)
             {
-                ClientAuthenticated?.Invoke(this, new X509Certificate2(cert));
+                ClientAuthenticated?.Invoke(this, new X509Certificate2(cert.Export(X509ContentType.Pkcs12)));
             }
 
             return true;

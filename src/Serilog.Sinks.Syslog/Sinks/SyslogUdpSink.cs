@@ -61,7 +61,6 @@ namespace Serilog.Sinks.Syslog
                 // If disposing == true, we're being called from an inheriting class calling base.Dispose()
                 if (disposing)
                 {
-                    this.client.Close();
                     this.client.Dispose();
                     this.client = null;
                 }
