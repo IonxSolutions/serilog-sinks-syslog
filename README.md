@@ -154,6 +154,8 @@ Local7
 
 **outputTemplate** Controls the format of the 'body' part of messages. See https://github.com/serilog/serilog/wiki/Formatting-Output.
 
+**restrictedToMinimumLevel** The minimum level for log events to pass through the sink. See https://github.com/serilog/serilog/wiki/Configuration-Basics#minimum-level.
+
 ## Rsyslog configuration
 On most systems, Rsyslog defaults to only accepting messages locally through the POSIX libc syslog functions. If you want to enable support for RFC5424 format messages, or you want to accept messages from remote hosts, you will need to enable support for either/both UDP and TCP. More information can be found [here](http://www.rsyslog.com/receiving-messages-from-a-remote-system/).
 
