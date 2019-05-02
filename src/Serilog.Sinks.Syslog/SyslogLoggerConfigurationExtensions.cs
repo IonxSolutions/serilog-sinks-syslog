@@ -34,7 +34,7 @@ namespace Serilog
         /// </param>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             Facility facility = Facility.Local0, string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new ArgumentException("The local syslog sink is only supported on Linux systems");
@@ -64,7 +64,7 @@ namespace Serilog
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
             Facility facility = Facility.Local0, string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
@@ -85,7 +85,7 @@ namespace Serilog
         /// <param name="config">Defines how to interact with the syslog server</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            SyslogTcpConfig config, LogEventLevel restricedToMinimumLevel = LogEventLevel.Verbose)
+            SyslogTcpConfig config, LogEventLevel restricedToMinimumLevel = LevelAlias.Minimum)
         {
             if (String.IsNullOrWhiteSpace(config.Host))
                 throw new ArgumentException(nameof(config.Host));
@@ -123,7 +123,7 @@ namespace Serilog
             SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate);
 
