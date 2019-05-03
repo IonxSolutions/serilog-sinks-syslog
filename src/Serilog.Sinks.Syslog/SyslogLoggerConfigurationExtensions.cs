@@ -11,6 +11,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using Serilog.Configuration;
+using Serilog.Events;
 using Serilog.Formatting.Display;
 using Serilog.Sinks.Syslog;
 
@@ -28,10 +29,12 @@ namespace Serilog
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="facility">The category of the application</param>
         /// <param name="outputTemplate">A message template describing the output messages
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <seealso cref="https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         /// </param>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            Facility facility = Facility.Local0, string outputTemplate = null)
+            Facility facility = Facility.Local0, string outputTemplate = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new ArgumentException("The local syslog sink is only supported on Linux systems");
@@ -42,7 +45,7 @@ namespace Serilog
 
             var sink = new SyslogLocalSink(formatter, syslogService);
 
-            return loggerSinkConfig.Sink(sink);
+            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel);
         }
 
         /// <summary>
@@ -55,11 +58,13 @@ namespace Serilog
         /// <param name="format">The syslog message format to be used</param>
         /// <param name="facility">The category of the application</param>
         /// <param name="outputTemplate">A message template describing the output messages
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <seealso cref="https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         /// </param>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
-            Facility facility = Facility.Local0, string outputTemplate = null)
+            Facility facility = Facility.Local0, string outputTemplate = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
@@ -69,7 +74,7 @@ namespace Serilog
 
             var sink = new SyslogUdpSink(endpoint, formatter, BatchConfig.Default);
 
-            return loggerSinkConfig.Sink(sink);
+            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel);
         }
 
         /// <summary>
@@ -78,15 +83,16 @@ namespace Serilog
         /// </summary>
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="config">Defines how to interact with the syslog server</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            SyslogTcpConfig config)
+            SyslogTcpConfig config, LogEventLevel restricedToMinimumLevel = LevelAlias.Minimum)
         {
             if (String.IsNullOrWhiteSpace(config.Host))
                 throw new ArgumentException(nameof(config.Host));
 
             var sink = new SyslogTcpSink(config, BatchConfig.Default);
 
-            return loggerSinkConfig.Sink(sink);
+            return loggerSinkConfig.Sink(sink, restricedToMinimumLevel);
         }
 
         /// <summary>
@@ -110,12 +116,14 @@ namespace Serilog
         /// <param name="outputTemplate">A message template describing the output messages
         /// <seealso cref="https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         /// </param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
             SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
             SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
-            string outputTemplate = null)
+            string outputTemplate = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate);
 
@@ -130,7 +138,7 @@ namespace Serilog
                 CertValidationCallback = certValidationCallback
             };
 
-            return TcpSyslog(loggerSinkConfig, config);
+            return TcpSyslog(loggerSinkConfig, config, restrictedToMinimumLevel);
         }
 
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
