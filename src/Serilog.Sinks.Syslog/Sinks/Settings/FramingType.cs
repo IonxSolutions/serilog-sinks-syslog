@@ -16,17 +16,17 @@ namespace Serilog.Sinks.Syslog
         CRLF,
 
         /// <summary>
-        /// Carriage return, followed by line-feed (ASCII 13)
+        /// Carriage return (ASCII 13)
         /// </summary>
         CR,
 
         /// <summary>
-        /// Carriage return, followed by line-feed (ASCII 10)
+        /// Line-feed (ASCII 10)
         /// </summary>
         LF,
 
         /// <summary>
-        /// Carriage return, followed by line-feed (ASCII 00)
+        /// NUL character (ASCII 00)
         /// </summary>
         NUL,
 
