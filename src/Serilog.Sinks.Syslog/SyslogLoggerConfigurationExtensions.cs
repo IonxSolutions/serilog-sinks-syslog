@@ -27,20 +27,21 @@ namespace Serilog
         /// Adds a sink that writes log events to the local syslog service on a Linux system
         /// </summary>
         /// <param name="loggerSinkConfig">The logger configuration</param>
+        /// <param name="appName">The name of the application. Defaults to the current process name</param>
         /// <param name="facility">The category of the application</param>
         /// <param name="outputTemplate">A message template describing the output messages
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <seealso cref="https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         /// </param>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            Facility facility = Facility.Local0, string outputTemplate = null,
+            string appName = null, Facility facility = Facility.Local0, string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new ArgumentException("The local syslog sink is only supported on Linux systems");
 
-            var formatter = GetFormatter(SyslogFormat.Local, null, facility, outputTemplate);
-            var syslogService = new LocalSyslogService(facility);
+            var formatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate);
+            var syslogService = new LocalSyslogService(facility, appName);
             syslogService.Open();
 
             var sink = new SyslogLocalSink(formatter, syslogService);
