@@ -44,12 +44,14 @@ namespace Serilog.Sinks.Syslog
         [DllImport("libc")]
         private static extern void closelog();
 
-        private IntPtr appIdentityHandle = IntPtr.Zero;
         private readonly Facility facility;
+        private readonly string appIdentity;
+        private IntPtr appIdentityHandle = IntPtr.Zero;
 
-        public LocalSyslogService(Facility facility)
+        public LocalSyslogService(Facility facility, string appIdentity = null)
         {
             this.facility = facility;
+            this.appIdentity = appIdentity ?? AppDomain.CurrentDomain.FriendlyName;
         }
 
         /// <summary>
@@ -57,8 +59,7 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public virtual void Open()
         {
-            var appIdentity = AppDomain.CurrentDomain.FriendlyName;
-            this.appIdentityHandle = Marshal.StringToHGlobalAnsi(appIdentity);
+            this.appIdentityHandle = Marshal.StringToHGlobalAnsi(this.appIdentity ?? AppDomain.CurrentDomain.FriendlyName);
 
             openlog(this.appIdentityHandle, SyslogOptions.LOG_PID, this.facility);
         }
