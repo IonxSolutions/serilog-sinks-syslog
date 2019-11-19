@@ -21,17 +21,13 @@ namespace Serilog.Sinks.Syslog.Tests
         private readonly BatchConfig batchConfig = new BatchConfig(3, BatchConfig.Default.Period, 10);
         private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(3);
 
-        [Fact]
-        public async Task Should_send_logs_to_udp_syslog_service_IpV6()
-        {
-            await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(true));
-        }
+        [Fact(Skip="IPV6 is not yet available in the Travis or AppVeyor CI environments")]
+        public async Task Should_send_logs_to_udp_syslog_service_ipv6()
+            => await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(true));
 
         [Fact]
-        public async Task Should_send_logs_to_udp_syslog_service_IpV4()
-        {
-            await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(false));
-        }
+        public async Task Should_send_logs_to_udp_syslog_service_ipv4()
+            => await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(false));
 
         private async Task Should_send_logs_to_udp_syslog_service(IPEndPoint endpoint)
         {
