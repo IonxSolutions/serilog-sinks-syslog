@@ -29,7 +29,7 @@ namespace Serilog.Sinks.Syslog
         {
             this.formatter = formatter;
             this.endpoint = endpoint;
-            this.client = new UdpClient();
+            this.client = new UdpClient(endpoint.AddressFamily);
         }
 
         /// <summary>

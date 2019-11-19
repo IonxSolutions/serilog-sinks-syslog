@@ -166,7 +166,9 @@ namespace Serilog
         {
             if (!IPAddress.TryParse(host, out var addr))
             {
-                addr = Dns.GetHostAddresses(host).First(x => x.AddressFamily == AddressFamily.InterNetwork);
+                addr = Dns.GetHostAddresses(host)
+                    .First(x => x.AddressFamily == AddressFamily.InterNetwork
+                    || x.AddressFamily == AddressFamily.InterNetworkV6);
             }
 
             return new IPEndPoint(addr, port);

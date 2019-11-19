@@ -19,15 +19,21 @@ namespace Serilog.Sinks.Syslog.Tests
         private readonly List<string> messagesReceived = new List<string>();
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly BatchConfig batchConfig = new BatchConfig(3, BatchConfig.Default.Period, 10);
-        private readonly IPEndPoint endpoint = GetFreeUdpEndPoint();
         private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(3);
 
+        [Fact(Skip="IPV6 is not yet available in the Travis or AppVeyor CI environments")]
+        public async Task Should_send_logs_to_udp_syslog_service_ipv6()
+            => await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(true));
+
         [Fact]
-        public async Task Should_send_logs_to_udp_syslog_service()
+        public async Task Should_send_logs_to_udp_syslog_service_ipv4()
+            => await Should_send_logs_to_udp_syslog_service(GetFreeUdpEndPoint(false));
+
+        private async Task Should_send_logs_to_udp_syslog_service(IPEndPoint endpoint)
         {
             var syslogFormatter = new Rfc3164Formatter(Facility.Local0, "TestApp");
 
-            var sink = new SyslogUdpSink(this.endpoint, syslogFormatter, this.batchConfig);
+            var sink = new SyslogUdpSink(endpoint, syslogFormatter, this.batchConfig);
             var log = GetLogger(sink);
 
             var receiver = new UdpSyslogReceiver();
@@ -38,7 +44,7 @@ namespace Serilog.Sinks.Syslog.Tests
                 this.countdown.Signal();
             };
 
-            var receiveTask = receiver.StartReceiving(this.endpoint, this.cts.Token);
+            var receiveTask = receiver.StartReceiving(endpoint, this.cts.Token);
 
             log.Information("This is test message 1");
             log.Warning("This is test message 2");
@@ -56,11 +62,11 @@ namespace Serilog.Sinks.Syslog.Tests
             await receiveTask;
         }
 
-        private static IPEndPoint GetFreeUdpEndPoint()
+        private static IPEndPoint GetFreeUdpEndPoint(bool asV6)
         {
-            using (var sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (var sock = new Socket(asV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                sock.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                sock.Bind(new IPEndPoint(asV6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0));
 
                 return (IPEndPoint)sock.LocalEndPoint;
             }
