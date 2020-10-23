@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -41,32 +41,27 @@ namespace Serilog.Sinks.Syslog
         }
 
         private static Severity MapLogLevelToSeverity(LogEventLevel logEventLevel)
-        {
-            switch (logEventLevel)
+            => logEventLevel switch
             {
-                case LogEventLevel.Debug: return Severity.Debug;
-                case LogEventLevel.Error: return Severity.Error;
-                case LogEventLevel.Fatal: return Severity.Emergency;
-                case LogEventLevel.Information: return Severity.Informational;
-                case LogEventLevel.Warning: return Severity.Warning;
-                default: return Severity.Notice;
-            }
-        }
+                LogEventLevel.Debug => Severity.Debug,
+                LogEventLevel.Error => Severity.Error,
+                LogEventLevel.Fatal => Severity.Emergency,
+                LogEventLevel.Information => Severity.Informational,
+                LogEventLevel.Warning => Severity.Warning,
+                _ => Severity.Notice
+            };
 
         protected string RenderMessage(LogEvent logEvent)
         {
             if (this.templateFormatter != null)
             {
-                using (var sw = new StringWriter())
-                {
-                    this.templateFormatter.Format(logEvent, sw);
-                    return sw.ToString();
-                }
+                using var sw = new StringWriter();
+
+                this.templateFormatter.Format(logEvent, sw);
+                return sw.ToString();
             }
-            else
-            {
-                return logEvent.RenderMessage();
-            }
+            
+            return logEvent.RenderMessage();
         }
     }
 }

@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -14,11 +14,10 @@ namespace Serilog.Sinks.Syslog.Tests
     {
         public CertificateStoreProviderTests()
         {
-            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-            {
-                store.Open(OpenFlags.ReadWrite | OpenFlags.OpenExistingOnly);
-                store.Add(ClientCert);
-            }
+            using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+
+            store.Open(OpenFlags.ReadWrite | OpenFlags.OpenExistingOnly);
+            store.Add(ClientCert);
         }
 
         [WindowsOnlyFact]
@@ -38,11 +37,10 @@ namespace Serilog.Sinks.Syslog.Tests
 
         public void Dispose()
         {
-            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-            {
-                store.Open(OpenFlags.ReadWrite | OpenFlags.OpenExistingOnly);
-                store.Remove(ClientCert);
-            }
+            using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            
+            store.Open(OpenFlags.ReadWrite | OpenFlags.OpenExistingOnly);
+            store.Remove(ClientCert);
         }
     }
 }

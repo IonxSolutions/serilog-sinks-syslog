@@ -16,20 +16,20 @@ using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog.Sample
 {
-    static class Program
+    internal static class Program
     {
         private static readonly Random rng = new Random();
         private static readonly string baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-        static async Task Main(string[] args)
+        private static async Task Main(string[] args)
         {
             var logConfig = new LoggerConfiguration()
                 .WriteTo.Console();
 
             // Use custom message template formatters, just so we can distinguish which sink wrote each message
             var tcpTemplateFormatter = new MessageTemplateTextFormatter("TCP: {Message}", null);
-            var udpOutputTemplate = "UDP: {Message}";
-            var localOutputTemplate = "Local: {Message}";
+            const string udpOutputTemplate = "UDP: {Message}";
+            const string localOutputTemplate = "Local: {Message}";
 
             // The LocalSyslog sink is only supported on Linux
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -93,13 +93,13 @@ namespace Serilog.Sinks.Syslog.Sample
                         using (LogContext.PushProperty("AProperty", rng.NextDouble()))
                         {
                             log.Information("This is test message {MessageNumber:00000}", i);
-                            await Task.Delay(2000);
+                            await Task.Delay(2000, ct);
                         }
                     }
                     else
                     {
                         log.Information("This is test message {MessageNumber:00000}", i);
-                        await Task.Delay(2000);
+                        await Task.Delay(2000, ct);
                     }
 
                     i++;
