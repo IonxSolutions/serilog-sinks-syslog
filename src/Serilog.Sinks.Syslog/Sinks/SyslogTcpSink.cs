@@ -212,6 +212,7 @@ namespace Serilog.Sinks.Syslog
 
         protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             if (!this.disposed)
             {
                 // If disposing == true, we're being called from an inheriting class calling base.Dispose()
@@ -225,8 +226,6 @@ namespace Serilog.Sinks.Syslog
 
                 this.disposed = true;
             }
-
-            base.Dispose(disposing);
         }
     }
 }
