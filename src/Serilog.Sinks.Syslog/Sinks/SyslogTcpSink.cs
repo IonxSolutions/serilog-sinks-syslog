@@ -22,9 +22,9 @@ namespace Serilog.Sinks.Syslog
 {
     /// <summary>
     /// Sink that writes events to a remote syslog service over a TCP connection. Secured
-    // communication using TLS is support
+    /// communication using TLS is support
     /// </summary>
-    public class SyslogTcpSink : PeriodicBatchingSink
+    public class SyslogTcpSink : IBatchedLogEventSink, IDisposable
     {
         private TcpClient client;
         private Stream stream;
@@ -35,14 +35,11 @@ namespace Serilog.Sinks.Syslog
         private readonly SslProtocols secureProtocols;
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
-        private bool disposed;
 
         public string Host { get; }
         public int Port { get; }
 
-
-        public SyslogTcpSink(SyslogTcpConfig config, BatchConfig batchConfig)
-            : base(batchConfig.BatchSizeLimit, batchConfig.Period, batchConfig.QueueSizeLimit)
+        public SyslogTcpSink(SyslogTcpConfig config)
         {
             this.formatter = config.Formatter;
             this.framer = config.Framer;
@@ -76,7 +73,7 @@ namespace Serilog.Sinks.Syslog
         /// Emit a batch of log events, running asynchronously.
         /// </summary>
         /// <param name="events">The events to send to the syslog service</param>
-        protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
+        public async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
             // Throws if not connected and unable to connect (PeriodicBatchingSink will handle retries)
             await EnsureConnected().ConfigureAwait(false);
@@ -92,11 +89,14 @@ namespace Serilog.Sinks.Syslog
                 catch (SocketException ex)
                 {
                     // Log and rethrow (PeriodicBatchingSink will handle retries)
-                    SelfLog.WriteLine($"[{nameof(SyslogTcpSink)}] error while sending to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
+                    SelfLog.WriteLine($"[{nameof(SyslogTcpSink)}] error while sending log event to syslog {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
                     throw;
                 }
             }
         }
+
+        public Task OnEmptyBatchAsync()
+            => Task.CompletedTask;
 
         protected async Task EnsureConnected()
         {
@@ -210,22 +210,12 @@ namespace Serilog.Sinks.Syslog
             this.client?.Close();
         }
 
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
-            base.Dispose(disposing);
-            if (!this.disposed)
-            {
-                // If disposing == true, we're being called from an inheriting class calling base.Dispose()
-                if (disposing)
-                {
-                    this.stream?.Dispose();
-                    this.stream = null;
-                    this.client?.Close();
-                    this.client = null;
-                }
-
-                this.disposed = true;
-            }
+            this.stream?.Dispose();
+            this.stream = null;
+            this.client?.Close();
+            this.client = null;
         }
     }
 }

@@ -4,13 +4,13 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using FakeItEasy.Configuration;
 using Xunit;
 using Shouldly;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
@@ -24,7 +24,6 @@ namespace Serilog.Sinks.Syslog.Tests
         private X509Certificate2 serverCertificate;
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly SyslogTcpConfig tcpConfig;
-        private readonly BatchConfig batchConfig = new BatchConfig(3, BatchConfig.Default.Period, 10);
         private readonly IPEndPoint endpoint = GetFreeTcpEndPoint();
         private const SslProtocols SECURE_PROTOCOLS = SslProtocols.Tls11 | SslProtocols.Tls12;
         private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(3);
@@ -44,11 +43,10 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Should_send_logs_to_tcp_syslog_service()
         {
-            var sink = new SyslogTcpSink(this.tcpConfig, this.batchConfig);
-            var log = GetLogger(sink);
+            var sink = new SyslogTcpSink(this.tcpConfig);
 
+            // Start a simple TCP syslog server that will capture all received messaged
             var receiver = new TcpSyslogReceiver(this.endpoint, null, SECURE_PROTOCOLS);
-
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
@@ -57,17 +55,16 @@ namespace Serilog.Sinks.Syslog.Tests
 
             var receiveTask = receiver.Start(this.cts.Token);
 
-            log.Information("This is test message 1");
-            log.Warning("This is test message 2");
-            log.Error("This is test message 3");
+            // Generate and send 3 log events
+            var logEvents = Some.LogEvents(3);
+            await sink.EmitBatchAsync(logEvents);
 
-            await this.countdown.WaitAsync(20000, this.cts.Token);
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(6000, this.cts.Token);
 
             // The server should have received all 3 messages sent by the sink
-            this.messagesReceived.Count.ShouldBe(3);
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<134>"));
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<132>"));
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<131>"));
+            this.messagesReceived.Count.ShouldBe(logEvents.Length);
+            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
 
             sink.Dispose();
             this.cts.Cancel();
@@ -87,32 +84,31 @@ namespace Serilog.Sinks.Syslog.Tests
                 return true;
             };
 
-            var sink = new SyslogTcpSink(this.tcpConfig, this.batchConfig);
-            var log = GetLogger(sink);
+            var sink = new SyslogTcpSink(this.tcpConfig);
 
+            // Start a simple TCP syslog server that will capture all received messaged
             var receiver = new TcpSyslogReceiver(this.endpoint, ServerCert, SECURE_PROTOCOLS);
-
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
                 this.countdown.Signal();
             };
 
+            // When a client connects, capture the client certificate they presented
             receiver.ClientAuthenticated += (_, cert) => this.clientCertificate = cert;
 
             var receiveTask = receiver.Start(this.cts.Token);
 
-            log.Information("This is test message 1");
-            log.Warning("This is test message 2");
-            log.Error("This is test message 3");
+            // Generate and send 3 log events
+            var logEvents = Some.LogEvents(3);
+            await sink.EmitBatchAsync(logEvents);
 
-            await this.countdown.WaitAsync(20000, this.cts.Token);
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(6000, this.cts.Token);
 
             // The server should have received all 3 messages sent by the sink
-            this.messagesReceived.Count.ShouldBe(3);
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<134>"));
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<132>"));
-            this.messagesReceived.ShouldContain(x => x.StartsWith("<131>"));
+            this.messagesReceived.Count.ShouldBe(logEvents.Length);
+            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
 
             // The sink should have presented the client certificate to the server
             this.clientCertificate.Thumbprint
@@ -133,18 +129,16 @@ namespace Serilog.Sinks.Syslog.Tests
         [LinuxOnlyFact]
         public void Should_resolve_hostname_to_ip_on_linux_when_keepalive_enabled()
         {
-            var sink = new SyslogTcpSink(this.tcpConfig, this.batchConfig);
+            var sink = new SyslogTcpSink(this.tcpConfig);
             sink.Host.ShouldBe("127.0.0.1");
         }
 
         private static IPEndPoint GetFreeTcpEndPoint()
         {
-            using (var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                sock.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            using var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            sock.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
-                return (IPEndPoint)sock.LocalEndPoint;
-            }
+            return (IPEndPoint)sock.LocalEndPoint;
         }
     }
 }

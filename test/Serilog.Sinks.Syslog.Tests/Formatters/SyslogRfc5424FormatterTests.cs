@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -10,8 +10,9 @@ using System.Text.RegularExpressions;
 using System.IO;
 using Serilog.Events;
 using Serilog.Parsing;
-using Xunit;
 using Shouldly;
+using Xunit;
+using Xunit.Abstractions;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
 
 namespace Serilog.Sinks.Syslog.Tests
@@ -23,14 +24,17 @@ namespace Serilog.Sinks.Syslog.Tests
         const string SOURCE_CONTEXT = "TestCtx";
         private static readonly string Host = Environment.MachineName.WithMaxLength(255);
 
+        private readonly ITestOutputHelper output;
         private readonly Rfc5424Formatter formatter = new Rfc5424Formatter(Facility.User, APP_NAME);
         private readonly DateTimeOffset timestamp;
         private readonly Regex regex;
 
-        public SyslogRfc5424FormatterTests()
+        public SyslogRfc5424FormatterTests(ITestOutputHelper output)
         {
+            this.output = output;
+
             // Prepare a regex object that can be used to check the output format
-            // NOTE: The regex is in a text file instead of as a variable - it's a but large, and all the escaping required to 
+            // NOTE: The regex is in a text file instead of as a variable - it's a but large, and all the escaping required to
             // have it as a variable just makes it hard to grok
             var patternFilename = GetFullPath("Rfc5424Regex.txt");
             this.regex = new Regex(File.ReadAllText(patternFilename), RegexOptions.IgnorePatternWhitespace | RegexOptions.ExplicitCapture);
@@ -47,7 +51,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var infoEvent = new LogEvent(this.timestamp, LogEventLevel.Information, null, template, Enumerable.Empty<LogEventProperty>());
 
             var formatted = this.formatter.FormatMessage(infoEvent);
-            Console.WriteLine("RFC5424 without structured data: " + formatted);
+            this.output.WriteLine($"RFC5424 without structured data: {formatted}");
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
@@ -62,13 +66,13 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Groups["sd"].Value.ShouldBe(NILVALUE);
             match.Groups["msg"].Value.ShouldBe("This is a test message");
 
-            Console.WriteLine("FORMATTED: " + formatted);
+            this.output.WriteLine($"FORMATTED: {formatted}");
         }
 
         [Fact]
         public void Should_format_message_with_structured_data()
         {
-            var testVal = "A Value";
+            const string testVal = "A Value";
 
             var properties = new List<LogEventProperty> {
                 new LogEventProperty("AProperty", new ScalarValue(testVal)),
@@ -81,7 +85,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, ex, template, properties);
 
             var formatted = this.formatter.FormatMessage(warnEvent);
-            Console.WriteLine("RFC5424 with structured data: " + formatted);
+            this.output.WriteLine($"RFC5424 with structured data: {formatted}");
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
@@ -99,12 +103,12 @@ namespace Serilog.Sinks.Syslog.Tests
 
         /// <summary>
         /// RFC5424 rules:
-        /// - Property names must be >= 1 and &lt;= 32 characters and may only contain printable ASCII 
+        /// - Property names must be >= 1 and &lt;= 32 characters and may only contain printable ASCII
         ///   characters as defined by PRINTUSASCII
-        /// 
+        ///
         /// - Property values must escape the characters '"', '\' and ']' with a backslash '\'
-        /// 
-        /// - MSGID (source context) must be >= 1 and &lt;= 32 characters and may only contain printable ASCII 
+        ///
+        /// - MSGID (source context) must be >= 1 and &lt;= 32 characters and may only contain printable ASCII
         ///   characters as defined by PRINTUSASCII
         /// </summary>
         [Fact]
@@ -120,7 +124,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var infoEvent = new LogEvent(this.timestamp, LogEventLevel.Information, null, template, properties);
 
             var formatted = this.formatter.FormatMessage(infoEvent);
-            Console.WriteLine("RFC5424: " + formatted);
+            this.output.WriteLine($"RFC5424: {formatted}");
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();

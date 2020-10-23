@@ -44,8 +44,6 @@ namespace Serilog.Sinks.Syslog.Tests
         }
 
         private static X509Certificate2 LoadCertFromFile(string filename)
-        {
-            return new X509Certificate2(filename, String.Empty, X509KeyStorageFlags.PersistKeySet);
-        }
+            => new X509Certificate2(filename, String.Empty, X509KeyStorageFlags.PersistKeySet);
     }
 }

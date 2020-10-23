@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -10,8 +10,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Serilog.Events;
 using Serilog.Parsing;
-using Xunit;
 using Shouldly;
+using Xunit;
+using Xunit.Abstractions;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
 
 namespace Serilog.Sinks.Syslog.Tests
@@ -21,14 +22,17 @@ namespace Serilog.Sinks.Syslog.Tests
         const string APP_NAME = "TestAppWithAVeryLongNameThatShouldBeTooLong";
         private static readonly string Host = Environment.MachineName.WithMaxLength(255);
 
+        private readonly ITestOutputHelper output;
         private readonly Rfc3164Formatter formatter = new Rfc3164Formatter(Facility.User, APP_NAME);
         private readonly DateTimeOffset timestamp;
         private readonly Regex regex;
 
-        public SyslogRfc3164FormatterTests()
+        public SyslogRfc3164FormatterTests(ITestOutputHelper output)
         {
+            this.output = output;
+
             // Prepare a regex object that can be used to check the output format
-            // NOTE: The regex is in a text file instead of as a variable - it's a but large, and all the escaping required to 
+            // NOTE: The regex is in a text file instead of as a variable - it's a but large, and all the escaping required to
             // have it as a variable just makes it hard to grok
             var patternFilename = GetFullPath("Rfc3164Regex.txt");
             this.regex = new Regex(File.ReadAllText(patternFilename), RegexOptions.IgnorePatternWhitespace | RegexOptions.ExplicitCapture);
@@ -45,7 +49,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var infoEvent = new LogEvent(this.timestamp, LogEventLevel.Information, null, template, Enumerable.Empty<LogEventProperty>());
 
             var formatted = this.formatter.FormatMessage(infoEvent);
-            Console.WriteLine("RFC3164 without source context: " + formatted);
+            this.output.WriteLine($"RFC3164 without source context: {formatted}");
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
@@ -57,7 +61,7 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Groups["proc"].Value.ToInt().ShouldBeGreaterThan(0);
             match.Groups["msg"].Value.ShouldBe("This is a test message");
 
-            // Spaces and anything other than printable ASCII should have been removed, and should have 
+            // Spaces and anything other than printable ASCII should have been removed, and should have
             // been truncated to 32 chars
             match.Groups["app"].Value.ShouldBe("TestAppWithAVeryLongNameThatShou");
         }
@@ -73,7 +77,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, properties);
 
             var formatted = this.formatter.FormatMessage(warnEvent);
-            Console.WriteLine("RFC3164 with source context: " + formatted);
+            this.output.WriteLine($"RFC3164 with source context: {formatted}");
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
@@ -83,11 +87,11 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Groups["host"].Value.ShouldBe(Host);
             match.Groups["proc"].Value.ToInt().ShouldBeGreaterThan(0);
 
-            // Spaces and anything other than printable ASCII should have been removed, and should have 
+            // Spaces and anything other than printable ASCII should have been removed, and should have
             // been truncated to 32 chars
             match.Groups["app"].Value.ShouldBe("TestAppWithAVeryLongNameThatShou");
 
-            // Ensure that we busted the source context out of its enclosing quotes, and that we unescaped 
+            // Ensure that we busted the source context out of its enclosing quotes, and that we unescaped
             // any other quotes
             match.Groups["msg"].Value.ShouldBe("[Test.Cont\"ext] This is a test message");
         }
