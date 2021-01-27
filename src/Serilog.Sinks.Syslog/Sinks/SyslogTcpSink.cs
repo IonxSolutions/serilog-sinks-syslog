@@ -35,6 +35,7 @@ namespace Serilog.Sinks.Syslog
         private readonly SslProtocols secureProtocols;
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
+        private readonly bool checkCertificateRevocation;
 
         public string Host { get; }
         public int Port { get; }
@@ -50,6 +51,7 @@ namespace Serilog.Sinks.Syslog
             this.secureProtocols = config.SecureProtocols;
             this.useTls = config.SecureProtocols != SslProtocols.None;
             this.certValidationCallback = config.CertValidationCallback;
+            this.checkCertificateRevocation = config.CheckCertificateRevocation;
 
             if (config.CertProvider?.Certificate != null)
             {
@@ -148,7 +150,7 @@ namespace Serilog.Sinks.Syslog
             // Note: this method takes an X509CertificateCollection, rather than an X509Certificate,
             // but providing the full chain does not actually appear to work for many servers
             await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
-                this.secureProtocols, false).ConfigureAwait(false);
+                this.secureProtocols, this.checkCertificateRevocation).ConfigureAwait(false);
 
             if (!sslStream.IsAuthenticated)
                 throw new AuthenticationException("Unable to authenticate secure syslog server");

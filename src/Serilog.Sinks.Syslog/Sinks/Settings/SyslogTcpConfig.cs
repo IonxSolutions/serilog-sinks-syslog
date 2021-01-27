@@ -61,5 +61,14 @@ namespace Serilog.Sinks.Syslog
         /// Callback to validate the server's SSL certificate. If null, the system default will be used
         /// </summary>
         public RemoteCertificateValidationCallback CertValidationCallback { get; set; }
+        
+        /// <summary>
+        /// When making a secure TCP connection, determines whether the server's certificate CRL, if
+        /// specified in the CRL Distribution Point (CDP) extension of the certificate or any intermediate
+        /// certificates, will be downloaded and checked for revocation. If any certificate within the
+        /// certificate chain has been revoked, the connection will be aborted. That behavior, of course,
+        /// can be customized by using the <see cref="CertValidationCallback"/> handler.
+        /// </summary>
+        public bool CheckCertificateRevocation { get; set; } = false;
     }
 }
