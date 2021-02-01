@@ -24,7 +24,6 @@ namespace Serilog.Sinks.Syslog.Tests
         private X509Certificate2 serverCertificate;
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly SyslogTcpConfig tcpConfig;
-        private readonly IPEndPoint endpoint = GetFreeTcpEndPoint();
         private const SslProtocols SECURE_PROTOCOLS = SslProtocols.Tls11 | SslProtocols.Tls12;
         private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(3);
 
@@ -32,8 +31,6 @@ namespace Serilog.Sinks.Syslog.Tests
         {
             this.tcpConfig = new SyslogTcpConfig
             {
-                Host = "localhost",
-                Port = this.endpoint.Port,
                 KeepAlive = true,
                 Formatter = new Rfc5424Formatter(Facility.Local0, "TestApp"),
                 Framer = new MessageFramer(FramingType.OCTET_COUNTING)
@@ -43,32 +40,13 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Should_send_logs_to_tcp_syslog_service()
         {
-            var sink = new SyslogTcpSink(this.tcpConfig);
+            await SendUnsecureAsync(IPAddress.Loopback);
+        }
 
-            // Start a simple TCP syslog server that will capture all received messaged
-            var receiver = new TcpSyslogReceiver(this.endpoint, null, SECURE_PROTOCOLS);
-            receiver.MessageReceived += (_, msg) =>
-            {
-                this.messagesReceived.Add(msg);
-                this.countdown.Signal();
-            };
-
-            var receiveTask = receiver.Start(this.cts.Token);
-
-            // Generate and send 3 log events
-            var logEvents = Some.LogEvents(3);
-            await sink.EmitBatchAsync(logEvents);
-
-            // Wait until the server has received all the messages we sent, or the timeout expires
-            await this.countdown.WaitAsync(6000, this.cts.Token);
-
-            // The server should have received all 3 messages sent by the sink
-            this.messagesReceived.Count.ShouldBe(logEvents.Length);
-            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
-
-            sink.Dispose();
-            this.cts.Cancel();
-            await receiveTask;
+        [Fact]
+        public async Task Should_send_logs_to_ipv6_tcp_syslog_service()
+        {
+            await SendUnsecureAsync(IPAddress.IPv6Loopback);
         }
 
         [Fact]
@@ -84,10 +62,8 @@ namespace Serilog.Sinks.Syslog.Tests
                 return true;
             };
 
-            var sink = new SyslogTcpSink(this.tcpConfig);
-
             // Start a simple TCP syslog server that will capture all received messaged
-            var receiver = new TcpSyslogReceiver(this.endpoint, ServerCert, SECURE_PROTOCOLS);
+            var receiver = new TcpSyslogReceiver(ServerCert, SECURE_PROTOCOLS, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
@@ -97,7 +73,10 @@ namespace Serilog.Sinks.Syslog.Tests
             // When a client connects, capture the client certificate they presented
             receiver.ClientAuthenticated += (_, cert) => this.clientCertificate = cert;
 
-            var receiveTask = receiver.Start(this.cts.Token);
+            this.tcpConfig.Host = IPAddress.Loopback.ToString();
+            this.tcpConfig.Port = receiver.IPEndPoint.Port;
+
+            var sink = new SyslogTcpSink(this.tcpConfig);
 
             // Generate and send 3 log events
             var logEvents = Some.LogEvents(3);
@@ -120,7 +99,36 @@ namespace Serilog.Sinks.Syslog.Tests
 
             sink.Dispose();
             this.cts.Cancel();
-            await receiveTask;
+        }
+
+        private async Task SendUnsecureAsync(IPAddress address)
+        {
+            // Start a simple TCP syslog server that will capture all received messaged
+            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token);
+            receiver.MessageReceived += (_, msg) =>
+            {
+                this.messagesReceived.Add(msg);
+                this.countdown.Signal();
+            };
+
+            this.tcpConfig.Host = address.ToString();
+            this.tcpConfig.Port = receiver.IPEndPoint.Port;
+
+            var sink = new SyslogTcpSink(this.tcpConfig);
+
+            // Generate and send 3 log events
+            var logEvents = Some.LogEvents(3);
+            await sink.EmitBatchAsync(logEvents);
+
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(6000, this.cts.Token);
+
+            // The server should have received all 3 messages sent by the sink
+            this.messagesReceived.Count.ShouldBe(logEvents.Length);
+            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
+
+            sink.Dispose();
+            this.cts.Cancel();
         }
 
         // You can't set socket options *and* connect to an endpoint using a hostname - if
@@ -129,16 +137,10 @@ namespace Serilog.Sinks.Syslog.Tests
         [LinuxOnlyFact]
         public void Should_resolve_hostname_to_ip_on_linux_when_keepalive_enabled()
         {
+            this.tcpConfig.Host = "localhost";
+
             var sink = new SyslogTcpSink(this.tcpConfig);
             sink.Host.ShouldBe("127.0.0.1");
-        }
-
-        private static IPEndPoint GetFreeTcpEndPoint()
-        {
-            using var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            sock.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-
-            return (IPEndPoint)sock.LocalEndPoint;
         }
     }
 }

@@ -110,7 +110,11 @@ namespace Serilog.Sinks.Syslog
                 // Recreate the TCP client
                 this.stream?.Dispose();
                 this.client?.Close();
-                this.client = new TcpClient();
+
+                // Allow connections to be made via IPv4 or IPv6. With just the default constructor,
+                // only IPv4 can be used.
+                this.client = new TcpClient(AddressFamily.InterNetworkV6);
+                this.client.Client.DualMode = true;
 
                 // If we're running on Linux, only try to set keep-alives if they are wanted (in
                 // that case we resolved the hostname to an IP in the ctor)
