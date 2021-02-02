@@ -43,16 +43,9 @@ namespace Serilog.Sinks.Syslog.Tests
             await SendUnsecureAsync(IPAddress.Loopback);
         }
 
-        [Fact]
+        [Fact(Skip = "IPV6 is not yet available in the Travis or AppVeyor CI environments")]
         public async Task Should_send_logs_to_ipv6_tcp_syslog_service()
         {
-            var nics = NetworkInterface.GetAllNetworkInterfaces();
-
-            if (!nics.Any(x => x.Supports(NetworkInterfaceComponent.IPv6)))
-            {
-                return;
-            }
-
             await SendUnsecureAsync(IPAddress.IPv6Loopback);
         }
 
