@@ -6,7 +6,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -46,6 +46,13 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Should_send_logs_to_ipv6_tcp_syslog_service()
         {
+            var nics = NetworkInterface.GetAllNetworkInterfaces();
+
+            if (!nics.Any(x => x.Supports(NetworkInterfaceComponent.IPv6)))
+            {
+                return;
+            }
+
             await SendUnsecureAsync(IPAddress.IPv6Loopback);
         }
 
