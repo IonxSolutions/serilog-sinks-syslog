@@ -150,7 +150,22 @@ namespace Serilog.Sinks.Syslog
                 // Reduce latency to a minimum
                 this.client.NoDelay = true;
 
-                await this.client.ConnectAsync(hostAddresses, this.Port).ConfigureAwait(false);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Windows can support multiple connection attempts, thereby allowing us to pass in an
+                    // array of addresses. See:
+                    // https://github.com/dotnet/runtime/blob/release/5.0/src/libraries/System.Net.Sockets/src/System/Net/Sockets/Socket.cs#L5071
+                    await this.client.ConnectAsync(hostAddresses, this.Port).ConfigureAwait(false);
+                }
+                else
+                {
+                    // However, multiple connection attempts is not guaranteed on other platforms. So we'll
+                    // be cautious and only use the first IP address. If for whatever reason the caller was
+                    // hoping that the second or some other IP address would be used, then they will just
+                    // have to change their DNS so that the IP address they want will be resolved with the
+                    // highest priority.
+                    await this.client.ConnectAsync(hostAddresses.First(), this.Port).ConfigureAwait(false);
+                }
 
                 this.stream = await GetStream(this.client.GetStream()).ConfigureAwait(false);
             }
