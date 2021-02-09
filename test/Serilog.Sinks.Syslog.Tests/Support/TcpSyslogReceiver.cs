@@ -24,68 +24,88 @@ namespace Serilog.Sinks.Syslog.Tests
         private readonly TcpListener tcpListener;
         private readonly X509Certificate certificate;
         private readonly SslProtocols secureProtocols;
+        private readonly IPEndPoint ipEndPoint;
+        private readonly CancellationToken cancellationToken;
 
         public event EventHandler<string> MessageReceived;
         public event EventHandler<X509Certificate2> ClientAuthenticated;
 
-        public TcpSyslogReceiver(IPEndPoint listenEndpoint, X509Certificate certificate,
-            SslProtocols secureProtocols)
+        public TcpSyslogReceiver(X509Certificate certificate, SslProtocols secureProtocols,
+            CancellationToken ct)
         {
-            this.tcpListener = new TcpListener(listenEndpoint);
             this.certificate = certificate;
             this.secureProtocols = secureProtocols;
-        }
+            this.cancellationToken = ct;
 
-        public Task Start(CancellationToken ct) => Task.Run(async () =>
-        {
+            // In order to listen on both IPv4 and IPv6, if available, we must either specify IPv6Any for
+            // the address and then manually set the DualMode property, or use the static TcpListener.Create()
+            // method. The static method will automatically use IPv6Any and set the DualMode property of the
+            // underlying socket to true for us. Then, by specifying zero for the port, a random available
+            // port will also be acquired. We must call the Start method, however, before obtaining the IP
+            // end point information in order to know what port is being used.
+            this.tcpListener = TcpListener.Create(0);
+
             this.tcpListener.Start();
 
-            var tcpClient = await this.tcpListener.AcceptTcpClientAsync();
-            tcpClient.NoDelay = true;
-            tcpClient.ReceiveBufferSize = 32 * 1024;
-            tcpClient.SendBufferSize = 4096;
+            this.ipEndPoint = this.tcpListener.Server.LocalEndPoint as IPEndPoint;
 
-            Stream stream = tcpClient.GetStream();
+            ct.Register(() => this.tcpListener.Stop());
 
-            if (this.certificate != null)
+            _ = this.tcpListener.AcceptTcpClientAsync()
+                .ContinueWith(HandleTcpConnection, ct,
+                    TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.NotOnCanceled,
+                    TaskScheduler.Default)
+                .ConfigureAwait(false);
+        }
+
+        private async Task HandleTcpConnection(Task<TcpClient> task)
+        {
+            using (var tcpClient = task.Result)
             {
-                var sslStream = new SslStream(stream, false, ClientCertValidationCallback);
-                stream = sslStream;
+                tcpClient.NoDelay = true;
 
-                try
+                Stream stream = tcpClient.GetStream();
+
+                if (this.certificate != null)
                 {
-                    await sslStream.AuthenticateAsServerAsync(this.certificate, true,
-                        this.secureProtocols, false);
+                    var sslStream = new SslStream(stream, false, ClientCertValidationCallback);
+                    stream = sslStream;
+
+                    try
+                    {
+                        await sslStream.AuthenticateAsServerAsync(this.certificate, true,
+                            this.secureProtocols, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        throw;
+                    }
                 }
-                catch (Exception ex)
+
+                while (!this.cancellationToken.IsCancellationRequested)
                 {
-                    Console.WriteLine(ex);
-                    throw;
+                    try
+                    {
+                        // Get the number of bytes in the message
+                        var len = stream.ReadLength();
+
+                        // Read the message
+                        var messageBytes = await stream.ReadBytes(len, this.cancellationToken);
+                        var message = Encoding.UTF8.GetString(messageBytes);
+
+                        MessageReceived?.Invoke(this, message);
+                    }
+                    catch (EndOfStreamException)
+                    {
+                        // Client disconnected
+                        break;
+                    }
                 }
             }
+        }
 
-            while (!ct.IsCancellationRequested)
-            {
-                try
-                {
-                    // Get the number of bytes in the message
-                    var len = stream.ReadLength();
-
-                    // Read the message
-                    var messageBytes = await stream.ReadBytes(len, ct);
-                    var message = Encoding.UTF8.GetString(messageBytes);
-
-                    MessageReceived?.Invoke(this, message);
-                }
-                catch (EndOfStreamException)
-                {
-                    // Client disconnected
-                    break;
-                }
-            }
-
-            tcpClient.Close();
-        });
+        public IPEndPoint IPEndPoint => this.ipEndPoint;
 
         private bool ClientCertValidationCallback(object sender, X509Certificate cert,
             X509Chain chain, SslPolicyErrors policyErrors)

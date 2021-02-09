@@ -110,7 +110,33 @@ namespace Serilog.Sinks.Syslog
                 // Recreate the TCP client
                 this.stream?.Dispose();
                 this.client?.Close();
-                this.client = new TcpClient();
+
+                // Allow connections to be made via IPv4 or IPv6. With just the default constructor,
+                // only IPv4 can be used. To support both, we must specify the AddressFamily.InterNetworkV6
+                // and set the DualMode property on the underlying socket to true. The DualMode property
+                // can only be set to true when the AddressFamily is set to InterNetworkV6.
+                //
+                // But there is another caveat. If you call the .Connect() method overload that takes in a
+                // DNS host name and port number, that method's code will first make a call to resolve the
+                // DNS host name to an IP address (or addresses). It then validates that one of the resolved
+                // IP addresses' AddressFamily type matches the AddressFamily type that was specified when
+                // the TcpClient was constructed. If it doesn't find a match, for example, because we specify
+                // AddressFamily.InterNetworkV6 and the DNS host name only resolves to an IPv4 address, it
+                // will throw an error. Essentially, the .Connect() method that takes in a DNS host name and
+                // port does not take into consideration the DualMode property that we set to true.
+                //
+                // All other .Connect() methods take in some form of IPAddress/IPEndPoint, which gets passed
+                // directly down to the underlying socket, which is where the DualMode property exists.
+                // Therefore, it is properly utilized and will work with either IPv4 or IPv6.
+                //
+                // So, we will make a call to resolve the DNS host name ourselves and call the .Connect()
+                // method that takes in the array of IP addresses. That way, it will try each of them and will
+                // work regardless of if the DNS host name resolved to an IPv4 or IPv6.
+                this.client = new TcpClient(AddressFamily.InterNetworkV6);
+                this.client.Client.DualMode = true;
+
+                // If the Host name specified is already an IP address, then that is what will be returned.
+                var hostAddresses = await Dns.GetHostAddressesAsync(this.Host).ConfigureAwait(false);
 
                 // If we're running on Linux, only try to set keep-alives if they are wanted (in
                 // that case we resolved the hostname to an IP in the ctor)
@@ -124,7 +150,22 @@ namespace Serilog.Sinks.Syslog
                 // Reduce latency to a minimum
                 this.client.NoDelay = true;
 
-                await this.client.ConnectAsync(this.Host, this.Port).ConfigureAwait(false);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Windows can support multiple connection attempts, thereby allowing us to pass in an
+                    // array of addresses. See:
+                    // https://github.com/dotnet/runtime/blob/release/5.0/src/libraries/System.Net.Sockets/src/System/Net/Sockets/Socket.cs#L5071
+                    await this.client.ConnectAsync(hostAddresses, this.Port).ConfigureAwait(false);
+                }
+                else
+                {
+                    // However, multiple connection attempts is not guaranteed on other platforms. So we'll
+                    // be cautious and only use the first IP address. If for whatever reason the caller was
+                    // hoping that the second or some other IP address would be used, then they will just
+                    // have to change their DNS so that the IP address they want will be resolved with the
+                    // highest priority.
+                    await this.client.ConnectAsync(hostAddresses.First(), this.Port).ConfigureAwait(false);
+                }
 
                 this.stream = await GetStream(this.client.GetStream()).ConfigureAwait(false);
             }
