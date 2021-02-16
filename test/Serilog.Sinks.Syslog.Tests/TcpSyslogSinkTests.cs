@@ -3,10 +3,10 @@
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -96,6 +96,29 @@ namespace Serilog.Sinks.Syslog.Tests
             // The sink should have seen the server's certificate in the validation callback
             this.serverCertificate.Thumbprint
                 .ShouldBe(ServerCert.Thumbprint, StringCompareShould.IgnoreCase);
+
+            sink.Dispose();
+            this.cts.Cancel();
+        }
+
+        [Fact]
+        public async Task Should_timeout_when_attempting_secure_tcp_to_non_secure_syslog_service()
+        {
+            // This is all that is needed for the client to attempt to initiate a TLS connection.
+            this.tcpConfig.SecureProtocols = SECURE_PROTOCOLS;
+
+            // As for the server, note that we aren't passing in the server certificate and we're
+            // instructing it to just listen and read and ignore any data.
+            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token, true);
+
+            this.tcpConfig.Host = IPAddress.Loopback.ToString();
+            this.tcpConfig.Port = receiver.IPEndPoint.Port;
+
+            var sink = new SyslogTcpSink(this.tcpConfig);
+
+            var logEvents = Some.LogEvents(3);
+
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await sink.EmitBatchAsync(logEvents));
 
             sink.Dispose();
             this.cts.Cancel();
