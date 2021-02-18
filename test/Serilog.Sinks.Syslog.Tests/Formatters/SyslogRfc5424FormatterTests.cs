@@ -107,7 +107,7 @@ namespace Serilog.Sinks.Syslog.Tests
             const string testProperty = "AProperty";
             const string testVal = "AValue";
             const string msgIdPropertyName = testProperty;
-            Rfc5424Formatter customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME,null, msgIdPropertyName);
+            var customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME, null, msgIdPropertyName);
 
             var properties = new List<LogEventProperty>
             {
