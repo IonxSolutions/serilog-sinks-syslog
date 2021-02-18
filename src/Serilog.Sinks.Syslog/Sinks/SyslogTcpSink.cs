@@ -37,6 +37,7 @@ namespace Serilog.Sinks.Syslog
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
         private readonly bool checkCertificateRevocation;
+        private readonly TimeSpan tlsAuthenticationTimeout;
 
         public string Host { get; }
         public int Port { get; }
@@ -53,6 +54,7 @@ namespace Serilog.Sinks.Syslog
             this.useTls = config.SecureProtocols != SslProtocols.None;
             this.certValidationCallback = config.CertValidationCallback;
             this.checkCertificateRevocation = config.CheckCertificateRevocation;
+            this.tlsAuthenticationTimeout = config.TlsAuthenticationTimeout;
 
             if (config.CertProvider?.Certificate != null)
             {
@@ -204,7 +206,7 @@ namespace Serilog.Sinks.Syslog
             // AuthenticateAsClientAsync() method to throw an ObjectDisposedException, breaking it out
             // of the asynchronous wait. We'll use 100 seconds, which is the same as the default timeout
             // for a WebRequest under a similar condition.
-            var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(100));
+            var timeoutCts = new CancellationTokenSource(this.tlsAuthenticationTimeout);
 
             using (timeoutCts)
             using (timeoutCts.Token.Register(() => { sslStream.Dispose(); baseStream.Dispose(); }))

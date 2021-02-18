@@ -113,6 +113,7 @@ namespace Serilog.Sinks.Syslog.Tests
 
             this.tcpConfig.Host = IPAddress.Loopback.ToString();
             this.tcpConfig.Port = receiver.IPEndPoint.Port;
+            this.tcpConfig.TlsAuthenticationTimeout = TimeSpan.FromSeconds(5);
 
             var sink = new SyslogTcpSink(this.tcpConfig);
 

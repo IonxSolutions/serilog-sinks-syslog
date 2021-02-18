@@ -3,6 +3,7 @@
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
+using System;
 using System.Net.Security;
 using System.Security.Authentication;
 
@@ -70,5 +71,16 @@ namespace Serilog.Sinks.Syslog
         /// can be customized by using the <see cref="CertValidationCallback"/> handler.
         /// </summary>
         public bool CheckCertificateRevocation { get; set; } = false;
+
+        /// <summary>
+        /// A timeout value for the TCP connection to perform the TLS handshake with the server. This is
+        /// only applicable if <see cref="SecureProtocols"/> is set to a value other than the default,
+        /// <see cref="SslProtocols.None"/>. This timeout value will ensure that if the server happens
+        /// to not support TLS at all, for example, the connection may appear to hang, waiting for it to
+        /// complete. This timeout will cause a disconnect and raise an exception after the elapsed time.
+        /// The default value is 100 seconds.
+        /// </summary>
+        /// <remarks>This does not control the initial TCP connection timeout.</remarks>
+        public TimeSpan TlsAuthenticationTimeout { get; set; } = TimeSpan.FromSeconds(100);
     }
 }
