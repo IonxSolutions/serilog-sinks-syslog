@@ -129,6 +129,7 @@ namespace Serilog
         /// </param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="messageIdPropertyName">Log data property to use for the syslog msgId</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -136,9 +137,10 @@ namespace Serilog
             SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            string messageIdPropertyName = null)
         {
-            var formatter = GetFormatter(format, appName, facility, outputTemplate);
+            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
             var config = new SyslogTcpConfig
             {
@@ -155,7 +157,8 @@ namespace Serilog
         }
 
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
-            string outputTemplate)
+            string outputTemplate,
+            string messageIdPropertyName = null)
         {
             var templateFormatter = String.IsNullOrWhiteSpace(outputTemplate)
                 ? null
@@ -164,7 +167,7 @@ namespace Serilog
             return format switch
             {
                 SyslogFormat.RFC3164 => new Rfc3164Formatter(facility, appName, templateFormatter),
-                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter),
+                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName),
                 SyslogFormat.Local => new LocalFormatter(facility, templateFormatter),
                 _ => throw new ArgumentException($"Invalid format: {format}")
             };

@@ -101,6 +101,42 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Groups["msg"].Value.ShouldBe($"This is a test message with val \"{testVal}\"");
         }
 
+        [Fact]
+        public void Should_choose_another_msgId_provider()
+        {
+            const string testProperty = "AProperty";
+            const string testVal = "AValue";
+            const string msgIdPropertyName = testProperty;
+            Rfc5424Formatter customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME,null, msgIdPropertyName);
+
+            var properties = new List<LogEventProperty>
+            {
+                new LogEventProperty(testProperty, new ScalarValue(testVal)),
+                new LogEventProperty("AnotherProperty", new ScalarValue("AnotherValue")),
+                new LogEventProperty("SourceContext", new ScalarValue(SOURCE_CONTEXT))
+            };
+
+            var template = new MessageTemplateParser().Parse("This is a test message with val {AProperty}");
+            var ex = new ArgumentException("Test");
+            var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, ex, template, properties);
+
+            var formatted = customFormatter.FormatMessage(warnEvent);
+            this.output.WriteLine($"RFC5424 with structured data: {formatted}");
+
+            var match = this.regex.Match(formatted);
+            match.Success.ShouldBeTrue();
+
+            match.Groups["pri"].Value.ShouldBe("<12>");
+            match.Groups["ver"].Value.ShouldBe("1");
+            match.Groups["timestamp"].Value.ShouldBe($"2013-12-19T04:01:02.357852{this.timestamp:zzz}");
+            match.Groups["app"].Value.ShouldBe(APP_NAME);
+            match.Groups["host"].Value.ShouldBe(Host);
+            match.Groups["proc"].Value.ToInt().ShouldBeGreaterThan(0);
+            match.Groups["msgid"].Value.ShouldBe(testVal);
+            match.Groups["sd"].Value.ShouldNotBe(NILVALUE);
+            match.Groups["msg"].Value.ShouldBe($"This is a test message with val \"{testVal}\"");
+        }
+
         /// <summary>
         /// RFC5424 rules:
         /// - Property names must be >= 1 and &lt;= 32 characters and may only contain printable ASCII

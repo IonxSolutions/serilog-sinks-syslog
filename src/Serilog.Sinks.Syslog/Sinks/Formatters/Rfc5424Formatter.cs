@@ -39,9 +39,11 @@ namespace Serilog.Sinks.Syslog
         private const string DATE_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.ffffffzzz";
 
         private readonly string applicationName;
+        private readonly string messageIdPropertyName;
 
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
-            MessageTemplateTextFormatter templateFormatter = null)
+            MessageTemplateTextFormatter templateFormatter = null,
+            string messageIdPropertyName = null)
             : base(facility, templateFormatter)
         {
             this.applicationName = applicationName ?? ProcessName;
@@ -50,6 +52,7 @@ namespace Serilog.Sinks.Syslog
             this.applicationName = this.applicationName
                 .AsPrintableAscii()
                 .WithMaxLength(48);
+            this.messageIdPropertyName = messageIdPropertyName ?? "SourceContext";
         }
 
         // NOTE: For the rsyslog daemon to correctly handle RFC5424, you need to change your /etc/rsyslog.conf to use:
@@ -73,9 +76,9 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         /// <param name="logEvent">The LogEvent to extract the context from</param>
         /// <returns>The processed SourceContext, or NILVALUE '-' if not set</returns>
-        private static string GetMessageId(LogEvent logEvent)
+        private string GetMessageId(LogEvent logEvent)
         {
-            var hasMsgId = logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue propertyValue);
+            var hasMsgId = logEvent.Properties.TryGetValue(this.messageIdPropertyName, out LogEventPropertyValue propertyValue);
 
             if (!hasMsgId)
                 return NILVALUE;
