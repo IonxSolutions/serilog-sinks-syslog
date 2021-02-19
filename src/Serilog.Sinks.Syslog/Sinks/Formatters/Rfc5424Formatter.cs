@@ -41,9 +41,17 @@ namespace Serilog.Sinks.Syslog
         private readonly string applicationName;
         private readonly string messageIdPropertyName;
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="Rfc5424Formatter"/> class allowing you to specify values for
+        /// the facility, application name, template formatter, and message Id property name.
+        /// </summary>
+        /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
+        /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 48. Defaults to the current process name.</param>
+        /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
+        /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
             MessageTemplateTextFormatter templateFormatter = null,
-            string messageIdPropertyName = null)
+            string messageIdPropertyName = "SourceContext")
             : base(facility, templateFormatter)
         {
             this.applicationName = applicationName ?? ProcessName;
@@ -52,7 +60,11 @@ namespace Serilog.Sinks.Syslog
             this.applicationName = this.applicationName
                 .AsPrintableAscii()
                 .WithMaxLength(48);
-            this.messageIdPropertyName = messageIdPropertyName ?? "SourceContext";
+
+            // Conform to the RFC
+            this.messageIdPropertyName = messageIdPropertyName
+                                         .AsPrintableAscii()
+                                         .WithMaxLength(32);
         }
 
         // NOTE: For the rsyslog daemon to correctly handle RFC5424, you need to change your /etc/rsyslog.conf to use:

@@ -19,6 +19,13 @@ namespace Serilog.Sinks.Syslog
     {
         private readonly string applicationName;
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="Rfc3164Formatter"/> class allowing you to specify values for
+        /// the facility, application name and template formatter.
+        /// </summary>
+        /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
+        /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 32. Defaults to the current process name.</param>
+        /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         public Rfc3164Formatter(Facility facility = Facility.Local0, string applicationName = null,
             MessageTemplateTextFormatter templateFormatter = null)
             : base(facility, templateFormatter)
