@@ -26,16 +26,18 @@ namespace Serilog.Sinks.Syslog.Tests
         private readonly SslProtocols secureProtocols;
         private readonly IPEndPoint ipEndPoint;
         private readonly CancellationToken cancellationToken;
+        private readonly bool listenOnly;
 
         public event EventHandler<string> MessageReceived;
         public event EventHandler<X509Certificate2> ClientAuthenticated;
 
         public TcpSyslogReceiver(X509Certificate certificate, SslProtocols secureProtocols,
-            CancellationToken ct)
+             CancellationToken ct, bool listenOnly = false)
         {
             this.certificate = certificate;
             this.secureProtocols = secureProtocols;
             this.cancellationToken = ct;
+            this.listenOnly = listenOnly;
 
             // In order to listen on both IPv4 and IPv6, if available, we must either specify IPv6Any for
             // the address and then manually set the DualMode property, or use the static TcpListener.Create()
@@ -83,6 +85,11 @@ namespace Serilog.Sinks.Syslog.Tests
                     }
                 }
 
+                if (this.listenOnly)
+                {
+                    await ListenOnlyAsync(stream);
+                }
+
                 while (!this.cancellationToken.IsCancellationRequested)
                 {
                     try
@@ -116,6 +123,24 @@ namespace Serilog.Sinks.Syslog.Tests
             }
 
             return true;
+        }
+
+        private async Task ListenOnlyAsync(Stream stream)
+        {
+            while (!this.cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    var buffer = new byte[4096];
+
+                    _ = await stream.ReadAsync(buffer, 0, buffer.Length, this.cancellationToken);
+                }
+                catch (Exception)
+                {
+                    // Ignore and try reading again until the cancellation token is signaled,
+                    // telling us to stop.
+                }
+            }
         }
     }
 }

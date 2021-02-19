@@ -13,6 +13,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -36,6 +37,7 @@ namespace Serilog.Sinks.Syslog
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
         private readonly bool checkCertificateRevocation;
+        private readonly TimeSpan tlsAuthenticationTimeout;
 
         public string Host { get; }
         public int Port { get; }
@@ -52,6 +54,7 @@ namespace Serilog.Sinks.Syslog
             this.useTls = config.SecureProtocols != SslProtocols.None;
             this.certValidationCallback = config.CertValidationCallback;
             this.checkCertificateRevocation = config.CheckCertificateRevocation;
+            this.tlsAuthenticationTimeout = config.TlsAuthenticationTimeout;
 
             if (config.CertProvider?.Certificate != null)
             {
@@ -190,8 +193,54 @@ namespace Serilog.Sinks.Syslog
             // Authenticate the client, using the provided client certificate if required
             // Note: this method takes an X509CertificateCollection, rather than an X509Certificate,
             // but providing the full chain does not actually appear to work for many servers
-            await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
-                this.secureProtocols, this.checkCertificateRevocation).ConfigureAwait(false);
+            //
+            // Asynchronous calls do not have a default timeout period like most of their synchronous
+            // counterparts do. The AuthenticateAsClientAsync() method initiates the TLS handshake,
+            // which requires sending AND receiving data from the server. If the server is just a plain
+            // socket listener that doesn't have TLS enabled, then it's possible that this method call
+            // will wait forever. For example, if you run the Syslog Watcher server program on Windows,
+            // it does not support TLS. However, it will gladly accept the TCP connection and the TLS
+            // handshake data and not send anything in response. Therefore, this method will wait forever,
+            // giving no indication that anything is wrong. So, we'll implement our own timeout that,
+            // when elapsed, will dispose of the underlying base stream, causing the call to the
+            // AuthenticateAsClientAsync() method to throw an ObjectDisposedException, breaking it out
+            // of the asynchronous wait. We'll use 100 seconds, which is the same as the default timeout
+            // for a WebRequest under a similar condition.
+            var timeoutCts = new CancellationTokenSource(this.tlsAuthenticationTimeout);
+
+            using (timeoutCts)
+            using (timeoutCts.Token.Register(() => { sslStream.Dispose(); baseStream.Dispose(); }))
+            {
+                try
+                {
+                    // Note that with the .NET 5.0 version of this method and .NET Core 2.1+ of this
+                    // method, a cancellation token can be passed directly in as a parameter.
+                    await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
+                        this.secureProtocols, this.checkCertificateRevocation).ConfigureAwait(false);
+
+                    // There is a race condition to this point and when the cancellation token's callback
+                    // may be called versus when we're able to dispose of it to prevent the callback.
+                }
+                catch (ObjectDisposedException)
+                {
+                    // We'd throw the same exception here as we have below in the race condition check,
+                    // so we can just ignore it here for now.
+                }
+            }
+
+            // To mitigate the above mentioned race condition, we can check the cancellation token here
+            // as well and error on the side of caution. If the token has been canceled, then we will not
+            // proceed.
+            if (timeoutCts.IsCancellationRequested)
+            {
+                // This may have already been done by the cancellation token's callback, but in case
+                // we get here due to the race condition, we need to do it and there is no harm in
+                // doing it twice.
+                sslStream.Dispose();
+                baseStream.Dispose();
+
+                throw new OperationCanceledException("Timeout while performing TLS authentication. Check to make sure the server is configured to handle TLS connections.");
+            }
 
             if (!sslStream.IsAuthenticated)
                 throw new AuthenticationException("Unable to authenticate secure syslog server");
@@ -214,7 +263,7 @@ namespace Serilog.Sinks.Syslog
         /// <summary>
         /// Attempt to provide meaningful diagnostic messages for common connection problems
         /// </summary>
-        /// <param name="ex">The exception that occured during the failed connection attempt</param>
+        /// <param name="ex">The exception that occurred during the failed connection attempt</param>
         private void HandleConnectError(Exception ex)
         {
             var prefix = $"[{nameof(SyslogTcpSink)}]";
