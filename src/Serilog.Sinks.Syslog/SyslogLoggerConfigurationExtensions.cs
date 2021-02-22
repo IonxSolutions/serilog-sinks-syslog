@@ -62,7 +62,7 @@ namespace Serilog
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="host">Hostname of the syslog server</param>
         /// <param name="port">Port the syslog server is listening on</param>
-        /// <param name="appName">The name of the application. Defaults to the current process name</param>
+        /// <param name="appName">The name of the application. Must be all printable ASCII characters. Max length 32 (for RFC3164) or 48 (for RFC5424). Defaults to the current process name</param>
         /// <param name="format">The syslog message format to be used</param>
         /// <param name="facility">The category of the application</param>
         /// <param name="batchConfig">Batching configuration</param>
@@ -115,7 +115,7 @@ namespace Serilog
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="host">Hostname of the syslog server</param>
         /// <param name="port">Port the syslog server is listening on</param>
-        /// <param name="appName">The name of the application. Defaults to the current process name</param>
+        /// <param name="appName">The name of the application. Must be all printable ASCII characters. Max length 32 (for RFC3164) or 48 (for RFC5424). Defaults to the current process name</param>
         /// <param name="framingType">How to frame/delimit syslog messages for the wire</param>
         /// <param name="format">The syslog message format to be used</param>
         /// <param name="facility">The category of the application</param>
@@ -129,6 +129,7 @@ namespace Serilog
         /// </param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -136,9 +137,10 @@ namespace Serilog
             SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            string messageIdPropertyName = null)
         {
-            var formatter = GetFormatter(format, appName, facility, outputTemplate);
+            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
             var config = new SyslogTcpConfig
             {
@@ -155,7 +157,8 @@ namespace Serilog
         }
 
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
-            string outputTemplate)
+            string outputTemplate,
+            string messageIdPropertyName = null)
         {
             var templateFormatter = String.IsNullOrWhiteSpace(outputTemplate)
                 ? null
@@ -164,7 +167,7 @@ namespace Serilog
             return format switch
             {
                 SyslogFormat.RFC3164 => new Rfc3164Formatter(facility, appName, templateFormatter),
-                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter),
+                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName),
                 SyslogFormat.Local => new LocalFormatter(facility, templateFormatter),
                 _ => throw new ArgumentException($"Invalid format: {format}")
             };

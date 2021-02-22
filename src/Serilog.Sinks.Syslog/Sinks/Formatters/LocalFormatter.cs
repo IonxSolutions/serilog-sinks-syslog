@@ -16,6 +16,12 @@ namespace Serilog.Sinks.Syslog
     /// </summary>
     public class LocalFormatter : SyslogFormatterBase
     {
+        /// <summary>
+        /// Initialize a new instance of <see cref="LocalFormatter"/> class allowing you to specify values for
+        /// the facility, application name and template formatter.
+        /// </summary>
+        /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
+        /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         public LocalFormatter(Facility facility = Facility.Local0,
             MessageTemplateTextFormatter templateFormatter = null)
             : base(facility, templateFormatter) { }
