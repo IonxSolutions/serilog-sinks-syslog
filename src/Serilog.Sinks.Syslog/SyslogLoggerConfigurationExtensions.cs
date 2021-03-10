@@ -132,6 +132,9 @@ namespace Serilog
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
+        /// <param name="batchSizeLimit">The batch size limit to use for the Periodic Batching Sink. Defaults to 1000.</param>
+        /// <param name="batchPeriod">The TimeSpan perioud to use for the Periodic Batching Sink. Defaults to TimeSpan.FromSeconds(2). Use the IConfiguration standard to define a value</param>
+        /// <param name="batchQueueLimit">The batch queue limit to use for the Periodic Batching Sink. Defaults to 100.000.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
