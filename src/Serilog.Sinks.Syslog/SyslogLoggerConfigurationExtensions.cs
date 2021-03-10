@@ -24,12 +24,14 @@ namespace Serilog
     /// </summary>
     public static class SyslogLoggerConfigurationExtensions
     {
+        private static readonly TimeSpan DefaultBatchPeriod = TimeSpan.FromSeconds(2);
+
         private static readonly PeriodicBatchingSinkOptions DefaultBatchOptions = new PeriodicBatchingSinkOptions
         {
             BatchSizeLimit = 1000,
-            Period = TimeSpan.FromSeconds(2),
+            Period = DefaultBatchPeriod,
             QueueLimit = 100_000
-        };
+        };        
 
         /// <summary>
         /// Adds a sink that writes log events to the local syslog service on a Linux system
@@ -138,7 +140,10 @@ namespace Serilog
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string messageIdPropertyName = null)
+            string messageIdPropertyName = null,
+            int batchSizeLimit = 1000,
+            TimeSpan? batchPeriod = null,
+            int batchQueueLimit = 100_000)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
@@ -153,7 +158,14 @@ namespace Serilog
                 CertValidationCallback = certValidationCallback
             };
 
-            return TcpSyslog(loggerSinkConfig, config, DefaultBatchOptions, restrictedToMinimumLevel);
+            var batchConfig = new PeriodicBatchingSinkOptions()
+            {
+                BatchSizeLimit = batchSizeLimit,
+                Period = batchPeriod ?? DefaultBatchPeriod,
+                QueueLimit = batchQueueLimit
+            };
+            
+            return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel);
         }
 
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
