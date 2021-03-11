@@ -146,7 +146,7 @@ namespace Serilog
             string messageIdPropertyName = null,
             int batchSizeLimit = 1000,
             TimeSpan? batchPeriod = null,
-            int batchQueueLimit = 100_000)
+            int? batchQueueLimit = 100_000)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
