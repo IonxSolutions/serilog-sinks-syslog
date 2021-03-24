@@ -140,7 +140,7 @@ namespace Serilog
             string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string messageIdPropertyName = null,
-            PeriodicBatchingSinkOptions batchOptions = null)
+            PeriodicBatchingSinkOptions batchConfig = null)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
@@ -155,8 +155,8 @@ namespace Serilog
                 CertValidationCallback = certValidationCallback
             };
 
-            var batchConfig = batchOptions ?? DefaultBatchOptions;
-                        
+            batchConfig ??= DefaultBatchOptions;
+
             return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel);
         }
 
