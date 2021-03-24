@@ -130,6 +130,7 @@ namespace Serilog
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
+        /// <param name="batchConfig">Configuration for the Periodic Batching Sink, type of PeriodicBatchingSinkOptions. Has the fields batchSizeLimit (Integer, defaults to 1000), batchPeriod (TimeSpan, defaults to 2 seconds) and batchQueueLimit (Nullable<int>, defaults to 100.000</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -138,7 +139,8 @@ namespace Serilog
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string messageIdPropertyName = null)
+            string messageIdPropertyName = null,
+            PeriodicBatchingSinkOptions batchConfig = null)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
 
@@ -153,7 +155,9 @@ namespace Serilog
                 CertValidationCallback = certValidationCallback
             };
 
-            return TcpSyslog(loggerSinkConfig, config, DefaultBatchOptions, restrictedToMinimumLevel);
+            batchConfig ??= DefaultBatchOptions;
+
+            return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel);
         }
 
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
