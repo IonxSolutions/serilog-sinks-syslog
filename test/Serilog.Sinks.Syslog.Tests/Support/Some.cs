@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Serilog.Events;
@@ -27,5 +28,9 @@ namespace Serilog.Sinks.Syslog.Tests
 
         public static MessageTemplate MessageTemplate(string text = null) =>
             new MessageTemplateParser().Parse(text ?? String());
+
+        public static LogEvent[] LogEvents(int count, IEnumerable<LogEventProperty> eventProperties) =>
+            Enumerable.Range(0, count).Select(_ =>
+                new LogEvent(Instant(), LogEventLevel.Information, null, MessageTemplate(), eventProperties)).ToArray();
     }
 }

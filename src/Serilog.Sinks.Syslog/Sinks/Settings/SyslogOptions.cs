@@ -36,7 +36,7 @@ namespace Serilog.Sinks.Syslog
         LOG_NOWAIT = 16,  // don't wait for console forks; DEPRECATED
 
         /// <summary>
-        /// As well as sending to syslog, write to the caller's standared error stream
+        /// As well as sending to syslog, write to the caller's standard error stream
         /// </summary>
         LOG_PERROR = 32
     }

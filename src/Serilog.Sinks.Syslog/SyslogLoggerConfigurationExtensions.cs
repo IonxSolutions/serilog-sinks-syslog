@@ -16,6 +16,13 @@ using Serilog.Formatting.Display;
 using Serilog.Sinks.PeriodicBatching;
 using Serilog.Sinks.Syslog;
 
+// Allow the unit tests to access the internal DefaultBatchOptions variable so as to be able
+// to derive a timeout value based upon the time interval that the batched messages are sent.
+// Granted, the default PeriodicBatchingSinkOptions also has the EagerlyEmitFirstEvent set to
+// true, so the Period is unlikely to come into effect. Nonetheless, it helps give the timeout
+// a reason.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Serilog.Sinks.Syslog.Tests")]
+
 namespace Serilog
 {
     /// <summary>
@@ -24,7 +31,7 @@ namespace Serilog
     /// </summary>
     public static class SyslogLoggerConfigurationExtensions
     {
-        private static readonly PeriodicBatchingSinkOptions DefaultBatchOptions = new PeriodicBatchingSinkOptions
+        internal static readonly PeriodicBatchingSinkOptions DefaultBatchOptions = new PeriodicBatchingSinkOptions
         {
             BatchSizeLimit = 1000,
             Period = TimeSpan.FromSeconds(2),
@@ -68,17 +75,19 @@ namespace Serilog
         /// <param name="batchConfig">Batching configuration</param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
             Facility facility = Facility.Local0, PeriodicBatchingSinkOptions batchConfig = null, string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
 
             batchConfig ??= DefaultBatchOptions;
-            var formatter = GetFormatter(format, appName, facility, outputTemplate);
+            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
             var endpoint = ResolveIP(host, port);
 
             var syslogUdpSink = new SyslogUdpSink(endpoint, formatter);
@@ -129,7 +138,7 @@ namespace Serilog
         /// </param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
-        /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
+        /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <param name="batchConfig">Configuration for the Periodic Batching Sink, type of PeriodicBatchingSinkOptions. Has the fields batchSizeLimit (Integer, defaults to 1000), batchPeriod (TimeSpan, defaults to 2 seconds) and batchQueueLimit (Nullable<int>, defaults to 100.000</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
@@ -139,7 +148,7 @@ namespace Serilog
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string messageIdPropertyName = null,
+            string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
             PeriodicBatchingSinkOptions batchConfig = null)
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName);
@@ -179,12 +188,9 @@ namespace Serilog
 
         private static IPEndPoint ResolveIP(string host, int port)
         {
-            if (!IPAddress.TryParse(host, out var addr))
-            {
-                addr = Dns.GetHostAddresses(host)
-                    .First(x => x.AddressFamily == AddressFamily.InterNetwork
-                    || x.AddressFamily == AddressFamily.InterNetworkV6);
-            }
+            var addr = Dns.GetHostAddresses(host)
+                .First(x => x.AddressFamily == AddressFamily.InterNetwork
+                || x.AddressFamily == AddressFamily.InterNetworkV6);
 
             return new IPEndPoint(addr, port);
         }

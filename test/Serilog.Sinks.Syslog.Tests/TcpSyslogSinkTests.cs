@@ -14,10 +14,12 @@ using System.Threading.Tasks;
 using Xunit;
 using Shouldly;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
+using Xunit.Abstractions;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
-    public class TcpSyslogSinkTests
+    [Collection("Uses Serilog SelfLog and Cannot be Run in Parallel")]
+    public class TcpSyslogSinkTests : IDisposable
     {
         private readonly List<string> messagesReceived = new List<string>();
         private X509Certificate2 clientCertificate;
@@ -25,9 +27,9 @@ namespace Serilog.Sinks.Syslog.Tests
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly SyslogTcpConfig tcpConfig;
         private const SslProtocols SECURE_PROTOCOLS = SslProtocols.Tls11 | SslProtocols.Tls12;
-        private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(3);
+        private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(NumberOfEventsToSend);
 
-        public TcpSyslogSinkTests()
+        public TcpSyslogSinkTests(ITestOutputHelper output)
         {
             this.tcpConfig = new SyslogTcpConfig
             {
@@ -35,6 +37,23 @@ namespace Serilog.Sinks.Syslog.Tests
                 Formatter = new Rfc5424Formatter(Facility.Local0, "TestApp"),
                 Framer = new MessageFramer(FramingType.OCTET_COUNTING)
             };
+
+            // This can be useful to see any logging done by the sink. Especially when there is an exception
+            // within the sink (and the sink has to catch and log it of course).
+            // Ideally, we would configure this globally, or at least in an xUnit Class Fixture (https://xunit.net/docs/shared-context).
+            // But the ITestOutputHelper output is not available there. So instead, this will get enabled
+            // and disabled for each test, just in case it is needed.
+            //
+            // But also note that the Serilog Selflog is itself a global/static instance. With xUnit, unit
+            // test classes are run in parallel. So we can't have multiple unit test classes enabling and
+            // disabling the Serilog Selflog at the same time. So for any unit test classes that utilize
+            // this, we will have to instruct xUnit to run them serially with the [Collection] attribute.
+            Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); });
+        }
+
+        public void Dispose()
+        {
+            Serilog.Debugging.SelfLog.Disable();
         }
 
         [Fact]
@@ -79,11 +98,11 @@ namespace Serilog.Sinks.Syslog.Tests
             var sink = new SyslogTcpSink(this.tcpConfig);
 
             // Generate and send 3 log events
-            var logEvents = Some.LogEvents(3);
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
             await sink.EmitBatchAsync(logEvents);
 
             // Wait until the server has received all the messages we sent, or the timeout expires
-            await this.countdown.WaitAsync(6000, this.cts.Token);
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
 
             // The server should have received all 3 messages sent by the sink
             this.messagesReceived.Count.ShouldBe(logEvents.Length);
@@ -113,11 +132,11 @@ namespace Serilog.Sinks.Syslog.Tests
 
             this.tcpConfig.Host = IPAddress.Loopback.ToString();
             this.tcpConfig.Port = receiver.IPEndPoint.Port;
-            this.tcpConfig.TlsAuthenticationTimeout = TimeSpan.FromSeconds(5);
+            this.tcpConfig.TlsAuthenticationTimeout = TimeSpan.FromSeconds(TimeoutInSeconds);
 
             var sink = new SyslogTcpSink(this.tcpConfig);
 
-            var logEvents = Some.LogEvents(3);
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
 
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await sink.EmitBatchAsync(logEvents));
 
@@ -141,11 +160,11 @@ namespace Serilog.Sinks.Syslog.Tests
             var sink = new SyslogTcpSink(this.tcpConfig);
 
             // Generate and send 3 log events
-            var logEvents = Some.LogEvents(3);
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
             await sink.EmitBatchAsync(logEvents);
 
             // Wait until the server has received all the messages we sent, or the timeout expires
-            await this.countdown.WaitAsync(6000, this.cts.Token);
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
 
             // The server should have received all 3 messages sent by the sink
             this.messagesReceived.Count.ShouldBe(logEvents.Length);
@@ -165,6 +184,54 @@ namespace Serilog.Sinks.Syslog.Tests
 
             var sink = new SyslogTcpSink(this.tcpConfig);
             sink.Host.ShouldBe("127.0.0.1");
+        }
+
+        [Fact]
+        public async Task Extension_method_with_batchConfig()
+        {
+            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token);
+            receiver.MessageReceived += (_, msg) =>
+            {
+                this.messagesReceived.Add(msg);
+                this.countdown.Signal();
+            };
+
+            // Change the defaults so we can recognize that they are taking effect.
+            var batchConfig = new PeriodicBatching.PeriodicBatchingSinkOptions
+            {
+                EagerlyEmitFirstEvent = false,
+                Period = TimeSpan.FromSeconds(TimeoutInSeconds),
+            };
+
+            var logger = new LoggerConfiguration().MinimumLevel.Debug();
+
+            logger.WriteTo.TcpSyslog(IPAddress.Loopback.ToString(),
+                receiver.IPEndPoint.Port,
+                secureProtocols: SslProtocols.None,
+                batchConfig: batchConfig);
+
+            var log = logger.CreateLogger();
+
+            // With the batching options set to not eagerly send the first events, we should be able to write
+            // some events, wait, check the receiver to make sure we didn't receive any, then wait again.
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
+
+            foreach (var item in logEvents)
+            {
+                log.Write(item);
+            }
+
+            await this.countdown.WaitAsync(TimeSpan.FromSeconds(TimeoutInSeconds / 2), this.cts.Token);
+
+            this.messagesReceived.Count.ShouldBe(0);
+
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
+
+            this.messagesReceived.Count.ShouldBe(NumberOfEventsToSend);
+            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
+
+            log.Dispose();
+            this.cts.Cancel();
         }
     }
 }
