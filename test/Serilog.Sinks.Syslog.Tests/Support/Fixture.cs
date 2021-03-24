@@ -32,6 +32,9 @@ namespace Serilog.Sinks.Syslog.Tests
         public static X509Certificate2 ClientCertWithoutKey => LoadCertFromFile(ClientCertWithoutKeyFilename);
         public static string ClientCertThumbprint => "6c8ea2c439bf560e72a021f2d28264ca4ad0488b";
 
+        public const int NumberOfEventsToSend = 3;
+        public static readonly int TimeoutInSeconds = 3 * (int)SyslogLoggerConfigurationExtensions.DefaultBatchOptions.Period.TotalSeconds;
+
         public static ILogger GetLogger(ILogEventSink sink) => new LoggerConfiguration()
             .WriteTo.Sink(sink)
             .CreateLogger();
@@ -43,7 +46,16 @@ namespace Serilog.Sinks.Syslog.Tests
             return Path.Combine(baseDir, filename);
         }
 
+        // Note, don't persist the storage of the private key because we don't go through the effort
+        // to ever clean it up. And since the whole certificate is loaded from a file each time, there
+        // is no need to persist it. If the private key is persisted, then every time the test is run,
+        // a new file will be created in \Users\<user>\AppData\Roaming\Microsoft\Crypto\RSA\S-1-...
+        // (when on Windows), and ultimately orphaned there. By not explicitly specifying to persist
+        // the key, the private key will be written to the key store and remain until this variable
+        // goes out of scope and is disposed. There is still a chance of orphaning and private key
+        // file in the key store. Ideally, we'd like to use X509KeyStorageFlags.EphemeralKeySet, but
+        // that option is not available on all .NET Framework versions being targeted.
         private static X509Certificate2 LoadCertFromFile(string filename)
-            => new X509Certificate2(filename, String.Empty, X509KeyStorageFlags.PersistKeySet);
+            => new X509Certificate2(filename, String.Empty);
     }
 }
