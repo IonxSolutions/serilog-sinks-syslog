@@ -123,10 +123,12 @@ namespace Serilog
         /// </summary>
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="host">Hostname of the syslog server</param>
+        /// <param name="checkHostIPAddress">Whether or not to check the IP Addresses of "host" from DNS record</param>
         /// <param name="port">Port the syslog server is listening on</param>
         /// <param name="appName">The name of the application. Must be all printable ASCII characters. Max length 32 (for RFC3164) or 48 (for RFC5424). Defaults to the current process name</param>
         /// <param name="framingType">How to frame/delimit syslog messages for the wire</param>
         /// <param name="format">The syslog message format to be used</param>
+        /// <param name="disableDualMode">Whether or not to disble dual mode of TCP client. Will use IPV4 only if true</param>
         /// <param name="facility">The category of the application</param>
         /// <param name="secureProtocols">
         /// SSL/TLS protocols to be used for a secure channel. Set to None for an unsecured connection
@@ -142,8 +144,8 @@ namespace Serilog
         /// <param name="batchConfig">Configuration for the Periodic Batching Sink, type of PeriodicBatchingSinkOptions. Has the fields batchSizeLimit (Integer, defaults to 1000), batchPeriod (TimeSpan, defaults to 2 seconds) and batchQueueLimit (Nullable<int>, defaults to 100.000</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
-            SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
+            string host, int port = 1468, bool checkHostIPAddress = true, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
+            SyslogFormat format = SyslogFormat.RFC5424, bool disableDualMode = false, Facility facility = Facility.Local0,
             SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
@@ -157,8 +159,10 @@ namespace Serilog
             {
                 Host = host,
                 Port = port,
+                CheckCertificateRevocation = checkHostIPAddress,
                 Formatter = formatter,
                 Framer = new MessageFramer(framingType),
+                DisableDualMode = disableDualMode,
                 SecureProtocols = secureProtocols,
                 CertProvider = certProvider,
                 CertValidationCallback = certValidationCallback
