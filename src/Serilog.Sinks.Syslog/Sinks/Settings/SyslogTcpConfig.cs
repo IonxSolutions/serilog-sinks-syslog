@@ -19,7 +19,7 @@ namespace Serilog.Sinks.Syslog
         /// <summary>
         /// Whether or not to check the IPAddress of Host
         /// </summary>
-        public bool CheckHostIPAddress { get; set; };
+        public bool CheckHostIPAddress { get; set; }
 
         /// <summary>
         /// TCP port the syslog server is listening on. Defaults to 1468, which is typically the

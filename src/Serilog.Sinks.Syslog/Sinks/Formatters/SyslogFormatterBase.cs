@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -22,14 +23,16 @@ namespace Serilog.Sinks.Syslog
     {
         private readonly Facility facility;
         private readonly MessageTemplateTextFormatter templateFormatter;
+        private readonly ITextFormatter formatter;
         protected static readonly string Host = Environment.MachineName.WithMaxLength(255);
         protected static readonly string ProcessId = Process.GetCurrentProcess().Id.ToString();
         protected static readonly string ProcessName = Process.GetCurrentProcess().ProcessName;
 
-        protected SyslogFormatterBase(Facility facility, MessageTemplateTextFormatter templateFormatter)
+        protected SyslogFormatterBase(Facility facility, MessageTemplateTextFormatter templateFormatter, ITextFormatter formatter)
         {
             this.facility = facility;
             this.templateFormatter = templateFormatter;
+            this.formatter = formatter;
         }
 
         public abstract string FormatMessage(LogEvent logEvent);
@@ -60,7 +63,15 @@ namespace Serilog.Sinks.Syslog
                 this.templateFormatter.Format(logEvent, sw);
                 return sw.ToString();
             }
-            
+
+            if (this.formatter != null)
+            {
+                using var sw = new StringWriter();
+
+                this.formatter.Format(logEvent, sw);
+                return sw.ToString();
+            }
+
             return logEvent.RenderMessage();
         }
     }

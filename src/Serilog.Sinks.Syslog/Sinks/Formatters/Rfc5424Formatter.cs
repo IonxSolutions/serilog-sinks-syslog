@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -52,9 +53,9 @@ namespace Serilog.Sinks.Syslog
         /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
-            MessageTemplateTextFormatter templateFormatter = null,
+            MessageTemplateTextFormatter templateFormatter = null, ITextFormatter formatter = null,
             string messageIdPropertyName = DefaultMessageIdPropertyName)
-            : base(facility, templateFormatter)
+            : base(facility, templateFormatter, formatter)
         {
             this.applicationName = applicationName ?? ProcessName;
 

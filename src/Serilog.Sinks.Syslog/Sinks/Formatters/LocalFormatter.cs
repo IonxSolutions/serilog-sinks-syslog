@@ -4,6 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -23,8 +24,8 @@ namespace Serilog.Sinks.Syslog
         /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         public LocalFormatter(Facility facility = Facility.Local0,
-            MessageTemplateTextFormatter templateFormatter = null)
-            : base(facility, templateFormatter) { }
+            MessageTemplateTextFormatter templateFormatter = null, ITextFormatter formatter = null)
+            : base(facility, templateFormatter, formatter) { }
 
         public override string FormatMessage(LogEvent logEvent)
             => RenderMessage(logEvent);

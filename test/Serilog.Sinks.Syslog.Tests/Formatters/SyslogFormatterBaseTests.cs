@@ -10,6 +10,7 @@ using Serilog.Formatting.Display;
 using Serilog.Parsing;
 using Xunit;
 using Shouldly;
+using Serilog.Formatting;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -46,8 +47,8 @@ namespace Serilog.Sinks.Syslog.Tests
 
         public class TestFormatter : SyslogFormatterBase
         {
-            public TestFormatter(MessageTemplateTextFormatter templateFormatter = null)
-                : base(Facility.Local0, templateFormatter) { }
+            public TestFormatter(MessageTemplateTextFormatter templateFormatter = null, ITextFormatter formatter = null)
+                : base(Facility.Local0, templateFormatter, formatter) { }
 
             public override string FormatMessage(LogEvent logEvent)
             {

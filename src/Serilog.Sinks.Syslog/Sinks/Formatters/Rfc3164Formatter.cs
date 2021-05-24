@@ -6,6 +6,7 @@
 using System;
 using System.Globalization;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -27,8 +28,8 @@ namespace Serilog.Sinks.Syslog
         /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 32. Defaults to the current process name.</param>
         /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         public Rfc3164Formatter(Facility facility = Facility.Local0, string applicationName = null,
-            MessageTemplateTextFormatter templateFormatter = null)
-            : base(facility, templateFormatter)
+            MessageTemplateTextFormatter templateFormatter = null, ITextFormatter formatter = null)
+            : base(facility, templateFormatter, formatter)
         {
             this.applicationName = applicationName ?? ProcessName;
 
