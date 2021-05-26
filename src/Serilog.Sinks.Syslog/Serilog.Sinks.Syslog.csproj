@@ -14,9 +14,9 @@
     <PackageTags>serilog;syslog;logging</PackageTags>
     <PackageIcon>icon.png</PackageIcon>
     <PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/IonxSolutions/serilog-sinks-syslog</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/CoverGo/serilog-sinks-syslog</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/IonxSolutions/serilog-sinks-syslog</RepositoryUrl>
+    <RepositoryUrl>https://github.com/CoverGo/serilog-sinks-syslog</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <IsPackable>true</IsPackable>

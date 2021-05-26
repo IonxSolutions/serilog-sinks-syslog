@@ -104,3 +104,5 @@ UpgradeLog*.htm
 
 # Rider
 .idea/
+
+nuget.config
