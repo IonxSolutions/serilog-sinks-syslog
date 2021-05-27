@@ -83,6 +83,8 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public bool CheckCertificateRevocation { get; set; } = false;
 
+        public bool AcceptAllCertifications { get; set; } = false;
+
         /// <summary>
         /// A timeout value for the TCP connection to perform the TLS handshake with the server. This is
         /// only applicable if <see cref="SecureProtocols"/> is set to a value other than the default,

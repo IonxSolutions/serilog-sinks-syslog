@@ -1,4 +1,4 @@
-// Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
+﻿// Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
 // Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
@@ -34,6 +34,7 @@ namespace Serilog.Sinks.Syslog
         private readonly bool checkHostIPAddress;
         private readonly bool enableKeepAlive;
         private readonly bool disableDualMode;
+        private readonly bool acceptAllCertifications;
         private readonly bool useTls;
         private readonly SslProtocols secureProtocols;
         private readonly X509Certificate2Collection clientCert;
@@ -56,7 +57,8 @@ namespace Serilog.Sinks.Syslog
 
             this.secureProtocols = config.SecureProtocols;
             this.useTls = config.SecureProtocols != SslProtocols.None;
-            this.certValidationCallback = config.CertValidationCallback;
+            this.acceptAllCertifications = config.AcceptAllCertifications;
+            this.certValidationCallback = config.AcceptAllCertifications ? new RemoteCertificateValidationCallback(AcceptAllCertifications) : config.CertValidationCallback;
             this.checkCertificateRevocation = config.CheckCertificateRevocation;
             this.tlsAuthenticationTimeout = config.TlsAuthenticationTimeout;
 
@@ -305,26 +307,26 @@ namespace Serilog.Sinks.Syslog
 
                 if (errorCode == SocketError.ConnectionRefused)
                 {
-                    SelfLog.WriteLine($"{prefix} connection refused to {this.Host}:{this.Port} - is the server listening?");
+                    SelfLog.WriteLine($"{prefix} connection refused to {this.Host}:{this.Port} on protocol {this.secureProtocols} - is the server listening?");
                 }
                 else if (errorCode == SocketError.TimedOut)
                 {
-                    SelfLog.WriteLine($"{prefix} timed out connecting to {this.Host}:{this.Port} - is a firewall blocking traffic?");
+                    SelfLog.WriteLine($"{prefix} timed out connecting to {this.Host}:{this.Port} on protocol {this.secureProtocols} - is a firewall blocking traffic?");
                 }
                 else
                 {
-                    SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
+                    SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} on protocol {this.secureProtocols} - {ex.Message}\n{ex.StackTrace}");
                 }
             }
             else if (ex is AuthenticationException)
             {
                 // Issue with secure channel negotiation (e.g. protocol mismatch)
                 var details = ex.InnerException?.Message ?? ex.Message;
-                SelfLog.WriteLine($"{prefix} unable to connect to secure server {this.Host}:{this.Port} - {details}\n{ex.StackTrace}");
+                SelfLog.WriteLine($"{prefix} unable to connect to secure server {this.Host}:{this.Port} on protocol {this.secureProtocols} - {details}\n{ex.StackTrace}");
             }
             else
             {
-                SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} - {ex.Message}\n{ex.StackTrace}");
+                SelfLog.WriteLine($"{prefix} unable to connect to {this.Host}:{this.Port} on protocol {this.secureProtocols} - {ex.Message}\n{ex.StackTrace}");
             }
 
             // Tear down the client
@@ -338,6 +340,24 @@ namespace Serilog.Sinks.Syslog
             this.stream = null;
             this.client?.Close();
             this.client = null;
+        }
+
+        /// <summary>
+        /// In Short: the Method solves the Problem of broken Certificates.
+        /// Sometime when requesting Data and the sending Webserverconnection
+        /// is based on a SSL Connection, an Error is caused by Servers whoes
+        /// Certificate(s) have Errors. Like when the Cert is out of date
+        /// and much more... So at this point when calling the method,
+        /// this behaviour is prevented
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="certification"></param>
+        /// <param name="chain"></param>
+        /// <param name="sslPolicyErrors"></param>
+        /// <returns>true</returns>
+        private static bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
 }
