@@ -97,14 +97,10 @@ namespace Serilog.Sinks.Syslog.Tests
         }
 
         [Fact]
-        public void Overriding_the_host_name()
+        public void Should_override_log_host_name()
         {
-            var properties = new List<LogEventProperty> {
-                new LogEventProperty("SourceContext", new ScalarValue(@"Test.Cont""ext"))
-            };
-
             var template = new MessageTemplateParser().Parse("This is a test message");
-            var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, properties);
+            var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, Enumerable.Empty<LogEventProperty>());
 
             var hostname = "NewHostName";
             var formatted = (new Rfc3164Formatter(Facility.User, APP_NAME, null, hostname)).FormatMessage(warnEvent);
