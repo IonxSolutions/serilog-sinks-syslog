@@ -177,5 +177,20 @@ namespace Serilog.Sinks.Syslog.Tests
             // and should have been truncated to 32 chars
             Regex.IsMatch(match.Groups["sd"].Value, @"APropertyNameThatIsLongerThan32C="".*""\s").ShouldBeTrue();
         }
+
+        [Fact]
+        public void Overriding_the_host_name()
+        {
+            var template = new MessageTemplateParser().Parse("This is a test message");
+            var infoEvent = new LogEvent(this.timestamp, LogEventLevel.Information, null, template, Enumerable.Empty<LogEventProperty>());
+
+            var hostname = "NewHostName";
+            var formatted = (new Rfc5424Formatter(Facility.User, APP_NAME, null, "SourceContext", hostname)).FormatMessage(infoEvent);
+
+            var match = this.regex.Match(formatted);
+            match.Success.ShouldBeTrue();
+
+            match.Groups["host"].Value.ShouldBe(hostname);
+        }
     }
 }
