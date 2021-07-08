@@ -79,11 +79,11 @@ namespace Serilog
         /// <param name="hostName">Name of the host. Must be in printable ASCII characters. Max length 255. Defaults to the machine name.</param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-                                                    string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
-                                                    Facility facility = Facility.Local0, PeriodicBatchingSinkOptions batchConfig = null, string outputTemplate = null,
-                                                    LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-                                                    string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
-                                                    string hostName = "")
+            string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
+            Facility facility = Facility.Local0, PeriodicBatchingSinkOptions batchConfig = null, string outputTemplate = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
+            string hostName = "")
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
@@ -145,15 +145,15 @@ namespace Serilog
         /// <param name="hostName">Name of the host. Must be in printable ASCII characters. Max length 255. Defaults to the machine name.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-                                                    string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
-                                                    SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
-                                                    SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
-                                                    RemoteCertificateValidationCallback certValidationCallback = null,
-                                                    string outputTemplate = null,
-                                                    LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-                                                    string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
-                                                    PeriodicBatchingSinkOptions batchConfig = null,
-                                                    string hostName = "")
+            string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
+            SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
+            SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
+            RemoteCertificateValidationCallback certValidationCallback = null,
+            string outputTemplate = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
+            PeriodicBatchingSinkOptions batchConfig = null,
+            string hostName = "")
         {
             var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, hostName);
 
