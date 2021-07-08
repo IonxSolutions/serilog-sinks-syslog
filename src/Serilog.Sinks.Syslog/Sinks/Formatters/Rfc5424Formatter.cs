@@ -84,7 +84,7 @@ namespace Serilog.Sinks.Syslog
             var sd = RenderStructuredData(logEvent);
             var msg = RenderMessage(logEvent);
 
-            return $"<{priority}>1 {timestamp} {Host} {this.applicationName} {ProcessId} {messageId} {sd} {msg}";
+            return $"<{priority}>1 {timestamp} {this.Host} {this.applicationName} {ProcessId} {messageId} {sd} {msg}";
         }
 
         /// <summary>

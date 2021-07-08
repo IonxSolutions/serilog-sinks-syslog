@@ -33,14 +33,11 @@ namespace Serilog.Sinks.Syslog
         {
             this.facility = facility;
             this.templateFormatter = templateFormatter;
-            if (string.IsNullOrEmpty(sourceHostOverride))
-            {
-                Host = Environment.MachineName.WithMaxLength(255);
-            }
-            else
-            {
-                Host = sourceHostOverride.WithMaxLength(255);
-            }
+
+            // Use hostname override, if specified
+            this.Host = String.IsNullOrEmpty(sourceHostOverride)
+                ? Environment.MachineName.WithMaxLength(255)
+                : sourceHostOverride.WithMaxLength(255);
         }
 
         public abstract string FormatMessage(LogEvent logEvent);

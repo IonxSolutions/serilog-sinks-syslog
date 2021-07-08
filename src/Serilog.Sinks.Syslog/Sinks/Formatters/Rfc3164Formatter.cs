@@ -61,8 +61,8 @@ namespace Serilog.Sinks.Syslog
             var msg = RenderMessage(logEvent);
 
             return context != null
-                ? $"<{priority}>{timestamp} {Host} {this.applicationName}[{ProcessId}]: [{context}] {msg}"
-                : $"<{priority}>{timestamp} {Host} {this.applicationName}[{ProcessId}]: {msg}";
+                ? $"<{priority}>{timestamp} {this.Host} {this.applicationName}[{ProcessId}]: [{context}] {msg}"
+                : $"<{priority}>{timestamp} {this.Host} {this.applicationName}[{ProcessId}]: {msg}";
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Serilog.Sinks.Syslog
         /// here)
         /// </summary>
         /// <param name="logEvent">The LogEvent to extract the context from</param>
-        /// <returns>The processed SourceContextt</returns>
+        /// <returns>The processed SourceContext</returns>
         private static string GetSourceContext(LogEvent logEvent)
         {
             var hasContext = logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue propertyValue);

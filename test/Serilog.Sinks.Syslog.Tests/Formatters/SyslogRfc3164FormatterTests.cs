@@ -102,8 +102,9 @@ namespace Serilog.Sinks.Syslog.Tests
             var template = new MessageTemplateParser().Parse("This is a test message");
             var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, Enumerable.Empty<LogEventProperty>());
 
-            var hostname = "NewHostName";
-            var formatted = (new Rfc3164Formatter(Facility.User, APP_NAME, null, hostname)).FormatMessage(warnEvent);
+            const string hostname = "NewHostName";
+            var localFormatter = new Rfc3164Formatter(Facility.User, APP_NAME, null, hostname);
+            var formatted = localFormatter.FormatMessage(warnEvent);
 
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
