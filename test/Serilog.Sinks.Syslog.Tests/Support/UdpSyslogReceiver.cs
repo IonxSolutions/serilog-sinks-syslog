@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -17,15 +17,15 @@ namespace Serilog.Sinks.Syslog.Tests
     /// </summary>
     public class UdpSyslogReceiver
     {
-        /// <summary>Register this event to be able to count or otherwise know and see the UDP packet
-        /// messages that are received by this server.</summary>
+        /// <summary>
+        /// Register this event to be able to count or otherwise know and see
+        /// the UDP packet messages that are received by this server</summary>
         public event EventHandler<string> MessageReceived;
 
-        /// <summary>After calling <see cref="StartReceiving"/>, use this property to know the address
-        /// and port that it is listening on.</summary>
+        /// <summary>The address and port that the receiver is listening on</summary>
         public IPEndPoint ListeningIPEndPoint { get; private set; }
 
-        private readonly UdpClient udpClient = null;
+        private readonly UdpClient udpClient;
         private readonly CancellationToken cancellationToken;
 
         public UdpSyslogReceiver(CancellationToken ct)
@@ -37,7 +37,7 @@ namespace Serilog.Sinks.Syslog.Tests
 
             this.udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
 
-            ListeningIPEndPoint = this.udpClient.Client.LocalEndPoint as IPEndPoint;
+            this.ListeningIPEndPoint = this.udpClient.Client.LocalEndPoint as IPEndPoint;
 
             this.cancellationToken = ct;
 

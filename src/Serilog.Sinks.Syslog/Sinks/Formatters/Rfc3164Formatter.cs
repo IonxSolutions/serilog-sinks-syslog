@@ -26,9 +26,11 @@ namespace Serilog.Sinks.Syslog
         /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 32. Defaults to the current process name.</param>
         /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
+        /// <param name="sourceHostOverride">Overrides the Host value in the syslog data packet. Defaults to Environment.MachineName when empty.</param>
         public Rfc3164Formatter(Facility facility = Facility.Local0, string applicationName = null,
-            MessageTemplateTextFormatter templateFormatter = null)
-            : base(facility, templateFormatter)
+            MessageTemplateTextFormatter templateFormatter = null,
+            string sourceHostOverride = "")
+            : base(facility, templateFormatter, sourceHostOverride)
         {
             this.applicationName = applicationName ?? ProcessName;
 
@@ -59,8 +61,8 @@ namespace Serilog.Sinks.Syslog
             var msg = RenderMessage(logEvent);
 
             return context != null
-                ? $"<{priority}>{timestamp} {Host} {this.applicationName}[{ProcessId}]: [{context}] {msg}"
-                : $"<{priority}>{timestamp} {Host} {this.applicationName}[{ProcessId}]: {msg}";
+                ? $"<{priority}>{timestamp} {this.Host} {this.applicationName}[{ProcessId}]: [{context}] {msg}"
+                : $"<{priority}>{timestamp} {this.Host} {this.applicationName}[{ProcessId}]: {msg}";
         }
 
         /// <summary>
@@ -69,7 +71,7 @@ namespace Serilog.Sinks.Syslog
         /// here)
         /// </summary>
         /// <param name="logEvent">The LogEvent to extract the context from</param>
-        /// <returns>The processed SourceContextt</returns>
+        /// <returns>The processed SourceContext</returns>
         private static string GetSourceContext(LogEvent logEvent)
         {
             var hasContext = logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue propertyValue);

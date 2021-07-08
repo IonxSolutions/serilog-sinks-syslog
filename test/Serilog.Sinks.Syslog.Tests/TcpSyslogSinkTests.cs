@@ -221,7 +221,7 @@ namespace Serilog.Sinks.Syslog.Tests
                 log.Write(item);
             }
 
-            await this.countdown.WaitAsync(TimeSpan.FromSeconds(TimeoutInSeconds / 2), this.cts.Token);
+            await this.countdown.WaitAsync(TimeSpan.FromSeconds(TimeoutInSeconds / 2f), this.cts.Token);
 
             this.messagesReceived.Count.ShouldBe(0);
 

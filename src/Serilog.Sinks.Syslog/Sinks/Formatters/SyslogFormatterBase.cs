@@ -22,14 +22,22 @@ namespace Serilog.Sinks.Syslog
     {
         private readonly Facility facility;
         private readonly MessageTemplateTextFormatter templateFormatter;
-        protected static readonly string Host = Environment.MachineName.WithMaxLength(255);
+        protected readonly string Host;
         protected static readonly string ProcessId = Process.GetCurrentProcess().Id.ToString();
         protected static readonly string ProcessName = Process.GetCurrentProcess().ProcessName;
 
-        protected SyslogFormatterBase(Facility facility, MessageTemplateTextFormatter templateFormatter)
+        protected SyslogFormatterBase(
+            Facility facility,
+            MessageTemplateTextFormatter templateFormatter,
+            string sourceHostOverride = "")
         {
             this.facility = facility;
             this.templateFormatter = templateFormatter;
+
+            // Use hostname override, if specified
+            this.Host = String.IsNullOrEmpty(sourceHostOverride)
+                ? Environment.MachineName.WithMaxLength(255)
+                : sourceHostOverride.WithMaxLength(255);
         }
 
         public abstract string FormatMessage(LogEvent logEvent);
@@ -60,7 +68,7 @@ namespace Serilog.Sinks.Syslog
                 this.templateFormatter.Format(logEvent, sw);
                 return sw.ToString();
             }
-            
+
             return logEvent.RenderMessage();
         }
     }

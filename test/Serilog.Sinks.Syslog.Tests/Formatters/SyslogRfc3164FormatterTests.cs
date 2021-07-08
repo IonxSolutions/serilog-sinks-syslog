@@ -95,5 +95,21 @@ namespace Serilog.Sinks.Syslog.Tests
             // any other quotes
             match.Groups["msg"].Value.ShouldBe("[Test.Cont\"ext] This is a test message");
         }
+
+        [Fact]
+        public void Should_override_log_host_name()
+        {
+            var template = new MessageTemplateParser().Parse("This is a test message");
+            var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, Enumerable.Empty<LogEventProperty>());
+
+            const string hostname = "NewHostName";
+            var localFormatter = new Rfc3164Formatter(Facility.User, APP_NAME, null, hostname);
+            var formatted = localFormatter.FormatMessage(warnEvent);
+
+            var match = this.regex.Match(formatted);
+            match.Success.ShouldBeTrue();
+
+            match.Groups["host"].Value.ShouldBe(hostname);
+        }
     }
 }
