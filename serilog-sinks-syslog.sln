@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.Syslog.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.Syslog.Sample", "sample\Serilog.Sinks.Syslog.Sample\Serilog.Sinks.Syslog.Sample.csproj", "{6396B111-A2C1-44CB-869C-A5A2217DAF21}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.Syslog.ConfigSample", "sample\Serilog.Sinks.Syslog.ConfigSample\Serilog.Sinks.Syslog.ConfigSample.csproj", "{DF009CE6-4102-490D-A226-EC775C23C5F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{6396B111-A2C1-44CB-869C-A5A2217DAF21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6396B111-A2C1-44CB-869C-A5A2217DAF21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6396B111-A2C1-44CB-869C-A5A2217DAF21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF009CE6-4102-490D-A226-EC775C23C5F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF009CE6-4102-490D-A226-EC775C23C5F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF009CE6-4102-490D-A226-EC775C23C5F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF009CE6-4102-490D-A226-EC775C23C5F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
