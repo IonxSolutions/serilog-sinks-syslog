@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Sample Console Application</Description>
+    <Authors>Ionx Solutions</Authors>
+    <Copyright>Copyright © Ionx Solutions 2018</Copyright>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp3.1;net462</TargetFrameworks>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-x86;linux-x64</RuntimeIdentifiers>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Serilog.Sinks.Syslog.ConfigSample</AssemblyName>
+    <RootNamespace>Serilog.Sinks.Syslog.ConfigSample</RootNamespace>
+    <RepositoryType>git</RepositoryType>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- workaround for serilog/serilog-settings-configuration/issues/196  -->
+    <PackageReference Include="Microsoft.NETCore.Targets" Version="3.0.0" PrivateAssets="all" />
+
+    <PackageReference Include="Serilog" Version="2.6.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.16" />
+    <ProjectReference Include="..\..\src\Serilog.Sinks.Syslog\Serilog.Sinks.Syslog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
