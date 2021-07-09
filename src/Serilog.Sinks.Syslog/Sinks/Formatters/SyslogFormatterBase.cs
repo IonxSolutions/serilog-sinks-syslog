@@ -29,15 +29,15 @@ namespace Serilog.Sinks.Syslog
         protected SyslogFormatterBase(
             Facility facility,
             MessageTemplateTextFormatter templateFormatter,
-            string sourceHostOverride = "")
+            string sourceHost = null)
         {
             this.facility = facility;
             this.templateFormatter = templateFormatter;
 
-            // Use hostname override, if specified
-            this.Host = String.IsNullOrEmpty(sourceHostOverride)
+            // Use source hostname override, if specified
+            this.Host = String.IsNullOrEmpty(sourceHost)
                 ? Environment.MachineName.WithMaxLength(255)
-                : sourceHostOverride.WithMaxLength(255);
+                : sourceHost.WithMaxLength(255);
         }
 
         public abstract string FormatMessage(LogEvent logEvent);

@@ -51,12 +51,12 @@ namespace Serilog.Sinks.Syslog
         /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 48. Defaults to the current process name.</param>
         /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
-        /// <param name="sourceHostOverride">Overrides the Host value in the syslog data packet. Defaults to Environment.MachineName when empty.</param>
+        /// <param name="sourceHost">Overrides the Host value in the syslog data packet. Defaults to Environment.MachineName when empty.</param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
             MessageTemplateTextFormatter templateFormatter = null,
             string messageIdPropertyName = DefaultMessageIdPropertyName,
-            string sourceHostOverride = "")
-            : base(facility, templateFormatter, sourceHostOverride)
+            string sourceHost = null)
+            : base(facility, templateFormatter, sourceHost)
         {
             this.applicationName = applicationName ?? ProcessName;
 
@@ -67,8 +67,8 @@ namespace Serilog.Sinks.Syslog
 
             // Conform to the RFC
             this.messageIdPropertyName = (messageIdPropertyName ?? DefaultMessageIdPropertyName)
-                                         .AsPrintableAscii()
-                                         .WithMaxLength(32);
+                .AsPrintableAscii()
+                .WithMaxLength(32);
         }
 
         // NOTE: For the rsyslog daemon to correctly handle RFC5424, you need to change your /etc/rsyslog.conf to use:
