@@ -135,8 +135,30 @@ namespace Serilog.Sinks.Syslog
                 // So, we will make a call to resolve the DNS host name ourselves and call the .Connect()
                 // method that takes in the array of IP addresses. That way, it will try each of them and will
                 // work regardless of if the DNS host name resolved to an IPv4 or IPv6.
-                this.client = new TcpClient(AddressFamily.InterNetworkV6);
-                this.client.Client.DualMode = true;
+                // 
+                // If constructing the TcpClient for IPv6 fails, fall back to IPv4
+                //
+                try
+                {
+                    this.client = new TcpClient(AddressFamily.InterNetworkV6)
+                    {
+                        Client = {DualMode = true}
+                    };
+                }
+                catch (SocketException socketEx)
+                {
+                    SelfLog.WriteLine($"Error using IPv6, falling back to IPv4 - {socketEx.Message}");
+
+                    try
+                    {
+                        this.client = new TcpClient(AddressFamily.InterNetwork);
+                    }
+                    catch (Exception ex)
+                    {
+                        SelfLog.WriteLine($"Error using IPv4, TcpClient cannot be initialized - {ex.Message}");
+                        throw;
+                    }
+                }                
 
                 // If the Host name specified is already an IP address, then that is what will be returned.
                 var hostAddresses = await Dns.GetHostAddressesAsync(this.Host).ConfigureAwait(false);
