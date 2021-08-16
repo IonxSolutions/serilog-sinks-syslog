@@ -136,29 +136,14 @@ namespace Serilog.Sinks.Syslog
                 // method that takes in the array of IP addresses. That way, it will try each of them and will
                 // work regardless of if the DNS host name resolved to an IPv4 or IPv6.
                 // 
-                // If constructing the TcpClient for IPv6 fails, fall back to IPv4
-                //
-                try
-                {
-                    this.client = new TcpClient(AddressFamily.InterNetworkV6)
-                    {
-                        Client = {DualMode = true}
-                    };
-                }
-                catch (SocketException socketEx)
-                {
-                    SelfLog.WriteLine($"Error using IPv6, falling back to IPv4 - {socketEx.Message}");
-
-                    try
-                    {
-                        this.client = new TcpClient(AddressFamily.InterNetwork);
-                    }
-                    catch (Exception ex)
-                    {
-                        SelfLog.WriteLine($"Error using IPv4, TcpClient cannot be initialized - {ex.Message}");
-                        throw;
-                    }
-                }                
+                // In some environments, like AWS Lambda, IPv6 is not available. This is not the same as testing
+                // with IPv6 disabled, for example, which is all we've been able to do up to this point. If IPv6
+                // is completely unavailable, then trying to create a socket with the AddressFamily.InterNetworkV6
+                // would throw an exception. We'll try and handle that gracefully with a check here. We'll assume
+                // that if only IPv4 is available, then the passed in host will resolve to an IPv4 address. No
+                // additional checks will be performed.
+                this.client = new TcpClient(Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
+                this.client.Client.DualMode = Socket.OSSupportsIPv6;
 
                 // If the Host name specified is already an IP address, then that is what will be returned.
                 var hostAddresses = await Dns.GetHostAddressesAsync(this.Host).ConfigureAwait(false);
