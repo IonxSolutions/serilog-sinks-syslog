@@ -43,18 +43,21 @@ namespace Serilog
         /// </summary>
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="appName">The name of the application. Defaults to the current process name</param>
-        /// <param name="facility">The category of the application</param>
+        /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="severityMapping">Provide your own method to override the default mapping logic of a Serilog <see cref="LogEventLevel"/>
+        /// to syslog <see cref="Severity"/>.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string appName = null, Facility facility = Facility.Local0, string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            Func<LogEventLevel, Severity> severityMapping = null)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new ArgumentException("The local syslog sink is only supported on Linux systems");
 
-            var formatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate);
+            var formatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate, severityMapping: severityMapping);
             var syslogService = new LocalSyslogService(facility, appName);
             syslogService.Open();
 
@@ -71,25 +74,27 @@ namespace Serilog
         /// <param name="port">Port the syslog server is listening on</param>
         /// <param name="appName">The name of the application. Must be all printable ASCII characters. Max length 32 (for RFC3164) or 48 (for RFC5424). Defaults to the current process name</param>
         /// <param name="format">The syslog message format to be used</param>
-        /// <param name="facility">The category of the application</param>
+        /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="batchConfig">Batching configuration</param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
-        /// <param name="sourceHost">Overrides the Hostname value in the syslog packet header. Max length 255. Defaults to Environment.MachineName.</param>
+        /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
+        /// <param name="severityMapping"><inheritdoc cref="LocalSyslog" path="/param[@name='severityMapping']"/></param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
             Facility facility = Facility.Local0, PeriodicBatchingSinkOptions batchConfig = null, string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
-            string sourceHost = null)
+            string sourceHost = null,
+            Func<LogEventLevel, Severity> severityMapping = null)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
 
             batchConfig ??= DefaultBatchOptions;
-            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost);
+            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost, severityMapping);
             var endpoint = ResolveIP(host, port);
 
             var syslogUdpSink = new SyslogUdpSink(endpoint, formatter);
@@ -129,7 +134,7 @@ namespace Serilog
         /// <param name="appName">The name of the application. Must be all printable ASCII characters. Max length 32 (for RFC3164) or 48 (for RFC5424). Defaults to the current process name</param>
         /// <param name="framingType">How to frame/delimit syslog messages for the wire</param>
         /// <param name="format">The syslog message format to be used</param>
-        /// <param name="facility">The category of the application</param>
+        /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="secureProtocols">
         /// SSL/TLS protocols to be used for a secure channel. Set to None for an unsecured connection
         /// </param>
@@ -142,7 +147,8 @@ namespace Serilog
         /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <param name="batchConfig">Configuration for the Periodic Batching Sink, type of PeriodicBatchingSinkOptions. Has the fields batchSizeLimit (Integer, defaults to 1000), batchPeriod (TimeSpan, defaults to 2 seconds) and batchQueueLimit (Nullable[int], defaults to 100.000</param>
-        /// <param name="sourceHost">Overrides the Hostname value in the syslog packet header. Max length 255. Defaults to Environment.MachineName.</param>
+        /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
+        /// <param name="severityMapping"><inheritdoc cref="LocalSyslog" path="/param[@name='severityMapping']"/></param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -153,9 +159,10 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
             PeriodicBatchingSinkOptions batchConfig = null,
-            string sourceHost = null)
+            string sourceHost = null,
+            Func<LogEventLevel, Severity> severityMapping = null)
         {
-            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost);
+            var formatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost, severityMapping);
 
             var config = new SyslogTcpConfig
             {
@@ -173,10 +180,30 @@ namespace Serilog
             return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel);
         }
 
+        /// <summary>An alternative mapping function that can be specified in any of the 'severityMapping' parameters.
+        /// This mapping takes a numerical approach, as opposed to a name approach when converting a Serilog
+        /// <see cref="LogEventLevel"/> to a syslog <see cref="Severity"/>. However, since syslog has more possible
+        /// values, <see cref="Severity.Critical"/> and <see cref="Severity.Alert"/> are skipped and the mapping
+        /// ends with <see cref="LogEventLevel.Fatal"/> being assigned to <see cref="Severity.Emergency"/>.</summary>
+        /// <param name="logEventLevel">A Serilog <see cref="LogEventLevel"/>.</param>
+        /// <returns>A syslog <see cref="Severity"/>.</returns>
+        public static Severity ValueBasedLogLevelToSeverityMap(LogEventLevel logEventLevel)
+            => logEventLevel switch
+            {
+                LogEventLevel.Verbose     => Severity.Debug,
+                LogEventLevel.Debug       => Severity.Informational,
+                LogEventLevel.Information => Severity.Notice,
+                LogEventLevel.Warning     => Severity.Warning,
+                LogEventLevel.Error       => Severity.Error,
+                LogEventLevel.Fatal       => Severity.Emergency,
+                _ => throw new ArgumentOutOfRangeException(nameof(logEventLevel), $"The value {logEventLevel} is not a valid LogEventLevel.")
+            };
+
         private static ISyslogFormatter GetFormatter(SyslogFormat format, string appName, Facility facility,
             string outputTemplate,
             string messageIdPropertyName = null,
-            string sourceHost = null)
+            string sourceHost = null,
+            Func<LogEventLevel, Severity> severityMapping = null)
         {
             var templateFormatter = String.IsNullOrWhiteSpace(outputTemplate)
                 ? null
@@ -184,9 +211,9 @@ namespace Serilog
 
             return format switch
             {
-                SyslogFormat.RFC3164 => new Rfc3164Formatter(facility, appName, templateFormatter, sourceHost),
-                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName, sourceHost),
-                SyslogFormat.Local => new LocalFormatter(facility, templateFormatter),
+                SyslogFormat.RFC3164 => new Rfc3164Formatter(facility, appName, templateFormatter, sourceHost, severityMapping),
+                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName, sourceHost, severityMapping),
+                SyslogFormat.Local => new LocalFormatter(facility, templateFormatter, severityMapping),
                 _ => throw new ArgumentException($"Invalid format: {format}")
             };
         }

@@ -96,6 +96,7 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Extension_method_config_with_port_and_Rfc5424_format_and_messageIdPropertyName()
         {
+            const string propName = "WidgetProcess";
             var receiver = new UdpSyslogReceiver(this.cts.Token);
 
             var logger = new LoggerConfiguration();
@@ -103,18 +104,18 @@ namespace Serilog.Sinks.Syslog.Tests
             logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
                 receiver.ListeningIPEndPoint.Port,
                 format: SyslogFormat.RFC5424,
-                messageIdPropertyName: "WidgetProcess");
+                messageIdPropertyName: propName);
 
             var evtProperties = new List<LogEventProperty>
             {
-                new LogEventProperty("WidgetProcess", new ScalarValue("Widget42")),
+                new LogEventProperty(propName, new ScalarValue("Widget42")),
             };
 
             // Should produce log events like:
             // <134>1 2013-12-19T00:01:00.000000-07:00 DSGCH0FP72 testhost.net462.x86 2396 Widget42 [meta WidgetProcess="Widget42"] __2
             var logEvents = Some.LogEvents(NumberOfEventsToSend, evtProperties);
 
-            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents);
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPropName: propName);
         }
 
         [Fact]
@@ -136,7 +137,171 @@ namespace Serilog.Sinks.Syslog.Tests
             await TestLoggerFromExtensionMethod(logger, receiver, 0);
         }
 
-        private async Task TestLoggerFromExtensionMethod(LoggerConfiguration logger, UdpSyslogReceiver receiver, int expected = NumberOfEventsToSend, Events.LogEvent[] altLogEvents = null)
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_severityMapping()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164,
+                severityMapping: level =>
+                level switch
+                {
+                    LogEventLevel.Verbose => Severity.Debug,
+                    LogEventLevel.Debug => Severity.Debug,
+                    LogEventLevel.Information => Severity.Informational,
+                    LogEventLevel.Warning => Severity.Warning,
+                    LogEventLevel.Error => Severity.Error,
+                    LogEventLevel.Fatal => Severity.Critical,
+                    _ => throw new ArgumentOutOfRangeException(nameof(level), $"The value {level} is not a valid LogEventLevel.")
+                });
+
+            // Should produce log events with a Syslog priority of 130. The default mapping would have produced 128.
+            // Facility.Local0 * 8 + Severity.Critical = 16 * 8 + 2 = 130
+            // <130>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[26964]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Fatal);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 130);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_alternate_severityMapping()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164,
+                severityMapping: level => SyslogLoggerConfigurationExtensions.ValueBasedLogLevelToSeverityMap(level));
+
+            // Should produce log events with a Syslog priority of 133. The default mapping would have produced 134.
+            // Facility.Local0 * 8 + Severity.Notice = 16 * 8 + 5 = 133
+            // <130>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[26964]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Information);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 133);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_verbose_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Verbose happens to fall under the default case and gets mapped to Syslog's Severity.Notice.
+            // Facility.Local0 * 8 + Severity.Notice = 16 * 8 + 5 = 133
+            // <133>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[19572]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Verbose);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 133);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_debug_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Debug gets mapped to Syslog's Severity.Debug.
+            // Facility.Local0 * 8 + Severity.Debug = 16 * 8 + 7 = 135
+            // <135>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[6728]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Debug);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 135);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_information_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Information gets mapped to Syslog's Severity.Informational.
+            // Facility.Local0 * 8 + Severity.Informational = 16 * 8 + 6 = 134
+            // <134>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[6728]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Information);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 134);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_warning_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Warning gets mapped to Syslog's Severity.Warning.
+            // Facility.Local0 * 8 + Severity.Warning = 16 * 8 + 4 = 132
+            // <132>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[6728]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Warning);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 132);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_error_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Error gets mapped to Syslog's Severity.Error.
+            // Facility.Local0 * 8 + Severity.Error = 16 * 8 + 3 = 131
+            // <131>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[6728]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Error);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 131);
+        }
+
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_fatal_log_level()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164).MinimumLevel.Verbose();
+
+            // The mapping of Fatal gets mapped to Syslog's Severity.Emergency.
+            // Facility.Local0 * 8 + Severity.Emergency = 16 * 8 + 0 = 128
+            // <128>Dec 19 00:05:00 DSGCH0FP72 testhost.net462.x86[6728]: __6
+            var logEvents = Some.LogEvents(NumberOfEventsToSend, LogEventLevel.Fatal);
+
+            await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 128);
+        }
+
+        private async Task TestLoggerFromExtensionMethod(LoggerConfiguration logger, UdpSyslogReceiver receiver, int expected = NumberOfEventsToSend, LogEvent[] altLogEvents = null, string altPropName = null, int? altPriority = null)
         {
             receiver.MessageReceived += (_, msg) =>
             {
@@ -165,11 +330,14 @@ namespace Serilog.Sinks.Syslog.Tests
                 this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
             }
 
-            if (altLogEvents != null)
+            if (altPropName != null)
             {
-                var source = altLogEvents.First().Properties.Keys.First();
+                this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.Contains(altPropName)));
+            }
 
-                this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.Contains(source)));
+            if (altPriority != null)
+            {
+                this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.Contains(altPriority.ToString())));
             }
 
             this.cts.Cancel();

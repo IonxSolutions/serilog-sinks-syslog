@@ -6,7 +6,7 @@
 namespace Serilog.Sinks.Syslog
 {
     /// <summary>
-    /// The category of the system or application that generated a syslog message
+    /// A value used to categorize the system or application that generated the syslog event.
     /// </summary>
     public enum Facility
     {

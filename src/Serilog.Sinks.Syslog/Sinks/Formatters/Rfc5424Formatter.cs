@@ -47,16 +47,18 @@ namespace Serilog.Sinks.Syslog
         /// Initialize a new instance of <see cref="Rfc5424Formatter"/> class allowing you to specify values for
         /// the facility, application name, template formatter, and message Id property name.
         /// </summary>
-        /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
+        /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/></param>
         /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 48. Defaults to the current process name.</param>
-        /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
+        /// <param name="templateFormatter"><inheritdoc cref="SyslogFormatterBase.templateFormatter" path="/summary"/></param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
-        /// <param name="sourceHost">Overrides the Host value in the syslog data packet. Defaults to Environment.MachineName when empty.</param>
+        /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
+        /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
             MessageTemplateTextFormatter templateFormatter = null,
             string messageIdPropertyName = DefaultMessageIdPropertyName,
-            string sourceHost = null)
-            : base(facility, templateFormatter, sourceHost)
+            string sourceHost = null,
+            Func<LogEventLevel, Severity> severityMapping = null)
+            : base(facility, templateFormatter, sourceHost, severityMapping)
         {
             this.applicationName = applicationName ?? ProcessName;
 
