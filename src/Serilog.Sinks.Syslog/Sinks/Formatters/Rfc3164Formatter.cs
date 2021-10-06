@@ -23,14 +23,16 @@ namespace Serilog.Sinks.Syslog
         /// Initialize a new instance of <see cref="Rfc3164Formatter"/> class allowing you to specify values for
         /// the facility, application name and template formatter.
         /// </summary>
-        /// <param name="facility">One of the <see cref="Facility"/> values indicating the machine process that created the syslog event. Defaults to <see cref="Facility.Local0"/>.</param>
+        /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/></param>
         /// <param name="applicationName">A user supplied value representing the application name that will appear in the syslog event. Must be all printable ASCII characters. Max length 32. Defaults to the current process name.</param>
-        /// <param name="templateFormatter">See <see cref="Formatting.ITextFormatter"/>.</param>
-        /// <param name="sourceHost">Overrides the Hostname value in the syslog packet header. Max length 255. Defaults to Environment.MachineName.</param>
+        /// <param name="templateFormatter"><inheritdoc cref="SyslogFormatterBase.templateFormatter" path="/summary"/></param>
+        /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
+        /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
         public Rfc3164Formatter(Facility facility = Facility.Local0, string applicationName = null,
             MessageTemplateTextFormatter templateFormatter = null,
-            string sourceHost = null)
-            : base(facility, templateFormatter, sourceHost)
+            string sourceHost = null,
+            Func<LogEventLevel, Severity> severityMapping = null)
+            : base(facility, templateFormatter, sourceHost, severityMapping)
         {
             this.applicationName = applicationName ?? ProcessName;
 
