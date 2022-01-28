@@ -101,13 +101,11 @@ var log = new LoggerConfiguration()
 
 `SyslogTcpConfig` properties:
 
-**SecureProtocols**: defines which protocols can be negotiated with the syslog server.
+**SecureProtocols**: defines which protocols can be negotiated with the syslog server. If `SecureProtocols` is set to `SecureProtocols.None`, SSL/TLS will not be used.
 
 **CertProvider**: can optionally be set if the syslog server requires client authentication. Various `ICertificateProvider`s are provided, to load a certificate from disk, the Certificate Store, or for you to pass in a certificate from any other source.
 
 **CertValidationCallback**: can optionally be set if you want to perform your own authentication of the syslog server's certificate. If not set, the system default will be used (the certificate must chain to a trusted root in the Certificate Store).
-
-If `SecureProtocols` is `SecureProtocols.None`,
 
 ### Additional optional parameters
 
