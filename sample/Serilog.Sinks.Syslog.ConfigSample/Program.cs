@@ -21,8 +21,12 @@ namespace Serilog.Sinks.Syslog.Sample
                 .AddJsonFile("appsettings.json")
                 .Build();
 
+            // Examples for both reading configuration from a JSON configuration file and
+            // an App.config/web.config file. The latter requiring the Serilog.Settings.AppSettings
+            // NuGet package. See https://github.com/serilog/serilog/wiki/AppSettings
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(config)
+                .ReadFrom.AppSettings()
                 .CreateLogger();
 
             SelfLog.Enable(Console.Error);
@@ -36,10 +40,10 @@ namespace Serilog.Sinks.Syslog.Sample
                 cts.Cancel();
             };
 
+            Console.WriteLine("Press CTRL-C to stop");
             await WriteLogs(cts.Token);
 
             // Blocks here waiting for CTRL-C
-            Console.WriteLine("Press CTRL-C to stop");
             cts.Token.WaitHandle.WaitOne();
 
             Log.CloseAndFlush();
