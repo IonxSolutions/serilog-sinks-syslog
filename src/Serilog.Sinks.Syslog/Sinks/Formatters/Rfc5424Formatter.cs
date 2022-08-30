@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -54,7 +55,7 @@ namespace Serilog.Sinks.Syslog
         /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
         /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
-            MessageTemplateTextFormatter templateFormatter = null,
+            ITextFormatter templateFormatter = null,
             string messageIdPropertyName = DefaultMessageIdPropertyName,
             string sourceHost = null,
             Func<LogEventLevel, Severity> severityMapping = null)

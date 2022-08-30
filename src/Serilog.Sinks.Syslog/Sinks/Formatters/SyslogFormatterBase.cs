@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -23,7 +24,7 @@ namespace Serilog.Sinks.Syslog
         protected readonly Facility facility;
 
         /// <summary>See <see cref="Formatting.ITextFormatter"/>.</summary>
-        protected readonly MessageTemplateTextFormatter templateFormatter;
+        protected readonly ITextFormatter templateFormatter;
 
         /// <summary><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></summary>
         protected readonly Func<LogEventLevel, Severity> severityMapping;
@@ -42,7 +43,7 @@ namespace Serilog.Sinks.Syslog
         /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
         protected SyslogFormatterBase(
             Facility facility,
-            MessageTemplateTextFormatter templateFormatter,
+            ITextFormatter templateFormatter,
             string sourceHost = null,
             Func<LogEventLevel, Severity> severityMapping = null)
         {

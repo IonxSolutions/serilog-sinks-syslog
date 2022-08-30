@@ -5,6 +5,7 @@
 
 using System;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
@@ -25,7 +26,7 @@ namespace Serilog.Sinks.Syslog
         /// <param name="templateFormatter"><inheritdoc cref="SyslogFormatterBase.templateFormatter" path="/summary"/></param>
         /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
         public LocalFormatter(Facility facility = Facility.Local0,
-            MessageTemplateTextFormatter templateFormatter = null,
+            ITextFormatter templateFormatter = null,
             Func<LogEventLevel, Severity> severityMapping = null)
             : base(facility, templateFormatter, severityMapping: severityMapping) { }
 
