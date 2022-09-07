@@ -142,9 +142,14 @@ namespace Serilog.Sinks.Syslog
                 // would throw an exception. We'll try and handle that gracefully with a check here. We'll assume
                 // that if only IPv4 is available, then the passed in host will resolve to an IPv4 address. No
                 // additional checks will be performed.
-                this.client = new TcpClient(Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
-                this.client.Client.DualMode = Socket.OSSupportsIPv6;
+                //this.client = new TcpClient(Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
+                //this.client.Client.DualMode = Socket.OSSupportsIPv6;
 
+                // Ehud Lederman 7/9/2022:
+                // Since we got an exception when calling either the setter TcpClient.DualMode or ctor TcpClient(AddressFamily),
+                // we use the default ctor + remove the setting of TcpClient.DualMode
+                this.client = new TcpClient();
+                
                 // If the Host name specified is already an IP address, then that is what will be returned.
                 var hostAddresses = await Dns.GetHostAddressesAsync(this.Host).ConfigureAwait(false);
 
