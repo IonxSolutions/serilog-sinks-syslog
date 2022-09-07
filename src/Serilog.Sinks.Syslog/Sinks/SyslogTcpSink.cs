@@ -58,7 +58,7 @@ namespace Serilog.Sinks.Syslog
 
             if (config.CertProvider?.Certificate != null)
             {
-                this.clientCert = new X509Certificate2Collection(new [] { config.CertProvider.Certificate });
+                this.clientCert = new X509Certificate2Collection(new[] { config.CertProvider.Certificate });
             }
 
             // You can't set socket options *and* connect to an endpoint using a hostname - if
@@ -216,7 +216,7 @@ namespace Serilog.Sinks.Syslog
             var timeoutCts = new CancellationTokenSource(this.tlsAuthenticationTimeout);
 
             using (timeoutCts)
-            using (timeoutCts.Token.Register(() => { sslStream.Dispose(); baseStream.Dispose(); }))
+            await using (timeoutCts.Token.Register(() => { sslStream.Dispose(); baseStream.Dispose(); }))
             {
                 try
                 {
@@ -233,6 +233,17 @@ namespace Serilog.Sinks.Syslog
                     // We'd throw the same exception here as we have below in the race condition check,
                     // so we can just ignore it here for now.
                 }
+                catch (IOException) when (timeoutCts.IsCancellationRequested)
+                {
+                    // This may have already been done by the cancellation token's callback, but in case
+                    // we get here due to the race condition, we need to do it and there is no harm in
+                    // doing it twice.
+                    await sslStream.DisposeAsync();
+                    await baseStream.DisposeAsync();
+
+                    throw new OperationCanceledException(
+                        "Timeout while performing TLS authentication. Check to make sure the server is configured to handle TLS connections.");
+                }
             }
 
             // To mitigate the above mentioned race condition, we can check the cancellation token here
@@ -243,8 +254,8 @@ namespace Serilog.Sinks.Syslog
                 // This may have already been done by the cancellation token's callback, but in case
                 // we get here due to the race condition, we need to do it and there is no harm in
                 // doing it twice.
-                sslStream.Dispose();
-                baseStream.Dispose();
+                await sslStream.DisposeAsync();
+                await baseStream.DisposeAsync();
 
                 throw new OperationCanceledException("Timeout while performing TLS authentication. Check to make sure the server is configured to handle TLS connections.");
             }
