@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Serilog.Sinks.Syslog
 {
-    public static class StringExtensions
+    internal static class StringExtensions
     {
         private static readonly Regex printableAsciiRegex = new Regex("[^\\u0021-\\u007E]", RegexOptions.Compiled | RegexOptions.Singleline);
 
