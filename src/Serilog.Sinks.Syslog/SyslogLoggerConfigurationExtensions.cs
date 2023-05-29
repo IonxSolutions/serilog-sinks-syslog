@@ -56,8 +56,10 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             Func<LogEventLevel, Severity> severityMapping = null,ITextFormatter formatter = null)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                throw new ArgumentException("The local syslog sink is only supported on Linux systems");
+            // if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            //     throw new ArgumentException("The local syslog sink is only supported on Linux systems");
+            if (!LocalSyslogService.isAvailable)
+                return default;
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
                 severityMapping: severityMapping, formatter: formatter);

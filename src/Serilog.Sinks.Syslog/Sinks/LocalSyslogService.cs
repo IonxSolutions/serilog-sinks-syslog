@@ -48,6 +48,13 @@ namespace Serilog.Sinks.Syslog
         private readonly string appIdentity;
         private IntPtr appIdentityHandle = IntPtr.Zero;
 
+        internal static readonly bool isAvailable;
+
+        static LocalSyslogService()
+        {
+            isAvailable = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        }
+
         public LocalSyslogService(Facility facility, string appIdentity = null)
         {
             this.facility = facility;
@@ -59,6 +66,8 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public virtual void Open()
         {
+            if (!isAvailable)
+                return;
             this.appIdentityHandle = Marshal.StringToHGlobalAnsi(this.appIdentity ?? AppDomain.CurrentDomain.FriendlyName);
 
             openlog(this.appIdentityHandle, SyslogOptions.LOG_PID, this.facility);
@@ -73,6 +82,8 @@ namespace Serilog.Sinks.Syslog
         /// <param name="message">The RFC3164 or RFC5424 formatted syslog message to be logged</param>
         public virtual void WriteLog(int priority, string message)
         {
+            if (!isAvailable)
+                return;
             syslog(priority, "%s", message);
         }
 
@@ -81,6 +92,8 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public virtual void Close()
         {
+            if (!isAvailable)
+                return;
             closelog();
 
             if (this.appIdentityHandle != IntPtr.Zero)
