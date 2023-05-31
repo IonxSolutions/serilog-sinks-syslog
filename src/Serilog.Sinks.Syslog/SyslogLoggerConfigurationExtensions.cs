@@ -8,9 +8,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using Serilog.Configuration;
+using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Display;
@@ -56,10 +56,11 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             Func<LogEventLevel, Severity> severityMapping = null,ITextFormatter formatter = null)
         {
-            // if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            //     throw new ArgumentException("The local syslog sink is only supported on Linux systems");
-            if (!LocalSyslogService.isAvailable)
+            if (!LocalSyslogService.IsAvailable)
+            {
+                SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
                 return default;
+            }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
                 severityMapping: severityMapping, formatter: formatter);

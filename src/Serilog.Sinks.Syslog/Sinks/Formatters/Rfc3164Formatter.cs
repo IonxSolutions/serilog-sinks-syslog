@@ -7,7 +7,6 @@ using System;
 using System.Globalization;
 using Serilog.Events;
 using Serilog.Formatting;
-using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
 {

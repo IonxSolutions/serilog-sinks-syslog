@@ -1,5 +1,5 @@
 // Copyright 2018 Ionx Solutions (https://www.ionxsolutions.com)
-// Ionx Solutions licenses this file to you under the Apache License, 
+// Ionx Solutions licenses this file to you under the Apache License,
 // Version 2.0. You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 
@@ -10,6 +10,13 @@ namespace Serilog.Sinks.Syslog
 {
     public class LocalSyslogService
     {
+        private readonly Facility facility;
+        private readonly string appIdentity;
+        private IntPtr appIdentityHandle = IntPtr.Zero;
+
+        private static readonly Lazy<bool> lazyIsAvailable = new(() => RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+        internal static bool IsAvailable => lazyIsAvailable.Value;
+
         /// <summary>
         /// Opens a connection to the local syslog service
         /// </summary>
@@ -44,17 +51,6 @@ namespace Serilog.Sinks.Syslog
         [DllImport("libc")]
         private static extern void closelog();
 
-        private readonly Facility facility;
-        private readonly string appIdentity;
-        private IntPtr appIdentityHandle = IntPtr.Zero;
-
-        internal static readonly bool isAvailable;
-
-        static LocalSyslogService()
-        {
-            isAvailable = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-        }
-
         public LocalSyslogService(Facility facility, string appIdentity = null)
         {
             this.facility = facility;
@@ -66,8 +62,9 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public virtual void Open()
         {
-            if (!isAvailable)
+            if (!IsAvailable)
                 return;
+
             this.appIdentityHandle = Marshal.StringToHGlobalAnsi(this.appIdentity ?? AppDomain.CurrentDomain.FriendlyName);
 
             openlog(this.appIdentityHandle, SyslogOptions.LOG_PID, this.facility);
@@ -82,8 +79,9 @@ namespace Serilog.Sinks.Syslog
         /// <param name="message">The RFC3164 or RFC5424 formatted syslog message to be logged</param>
         public virtual void WriteLog(int priority, string message)
         {
-            if (!isAvailable)
+            if (!IsAvailable)
                 return;
+
             syslog(priority, "%s", message);
         }
 
@@ -92,8 +90,9 @@ namespace Serilog.Sinks.Syslog
         /// </summary>
         public virtual void Close()
         {
-            if (!isAvailable)
+            if (!IsAvailable)
                 return;
+
             closelog();
 
             if (this.appIdentityHandle != IntPtr.Zero)
