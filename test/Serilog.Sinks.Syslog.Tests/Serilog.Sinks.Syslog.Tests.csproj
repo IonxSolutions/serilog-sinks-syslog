@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Authors>Ionx Solutions</Authors>
     <Copyright>Copyright © Ionx Solutions 2018</Copyright>
-    <TargetFrameworks>net462;netcoreapp2.2;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp2.2;netcoreapp3.1;net6.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog.Tests</AssemblyName>

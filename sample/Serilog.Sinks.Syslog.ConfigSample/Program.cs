@@ -13,8 +13,6 @@ namespace Serilog.Sinks.Syslog.Sample
 {
     internal static class Program
     {
-        private static readonly Random rng = new Random();
-
         private static async Task Main(string[] args)
         {
             var config = new ConfigurationBuilder()

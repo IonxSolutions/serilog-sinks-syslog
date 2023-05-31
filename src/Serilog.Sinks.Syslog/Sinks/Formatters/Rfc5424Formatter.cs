@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Serilog.Events;
 using Serilog.Formatting;
-using Serilog.Formatting.Display;
 
 namespace Serilog.Sinks.Syslog
 {
