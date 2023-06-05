@@ -4,10 +4,12 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Authentication;
 using Serilog.Configuration;
 using Serilog.Debugging;
@@ -59,7 +61,11 @@ namespace Serilog
             if (!LocalSyslogService.IsAvailable)
             {
                 SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
-                return default;
+
+                var loggerSinkConfigurationType = typeof(LoggerSinkConfiguration);
+                var field = loggerSinkConfigurationType.GetField("_loggerConfiguration", BindingFlags.Instance | BindingFlags.NonPublic);
+                Debug.Assert(field != null);
+                return (LoggerConfiguration)field.GetValue(loggerSinkConfig);
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
