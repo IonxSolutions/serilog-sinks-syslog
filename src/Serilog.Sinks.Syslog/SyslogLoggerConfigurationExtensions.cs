@@ -4,18 +4,17 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Security.Authentication;
 using Serilog.Configuration;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Display;
+using Serilog.Sinks.Internal;
 using Serilog.Sinks.PeriodicBatching;
 using Serilog.Sinks.Syslog;
 
@@ -61,11 +60,7 @@ namespace Serilog
             if (!LocalSyslogService.IsAvailable)
             {
                 SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
-
-                //Construct a NullSink, https://github.com/serilog/serilog/issues/1670
-#pragma warning disable CS0618
-                return LoggerSinkConfiguration.Wrap(loggerSinkConfig, wt => wt, _ => { });
-#pragma warning restore CS0618
+                return loggerSinkConfig.Sink<NullSink>();
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
