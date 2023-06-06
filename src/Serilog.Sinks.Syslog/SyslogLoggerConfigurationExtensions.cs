@@ -63,7 +63,9 @@ namespace Serilog
                 SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
 
                 //Construct a NullSink, https://github.com/serilog/serilog/issues/1670
+#pragma warning disable CS0618
                 return LoggerSinkConfiguration.Wrap(loggerSinkConfig, wt => wt, _ => { });
+#pragma warning restore CS0618
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
