@@ -62,10 +62,8 @@ namespace Serilog
             {
                 SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
 
-                var loggerSinkConfigurationType = typeof(LoggerSinkConfiguration);
-                var field = loggerSinkConfigurationType.GetField("_loggerConfiguration", BindingFlags.Instance | BindingFlags.NonPublic);
-                Debug.Assert(field != null);
-                return (LoggerConfiguration)field.GetValue(loggerSinkConfig);
+                //Construct a NullSink, https://github.com/serilog/serilog/issues/1670
+                return LoggerSinkConfiguration.Wrap(loggerSinkConfig, wt => wt, _ => { });
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
