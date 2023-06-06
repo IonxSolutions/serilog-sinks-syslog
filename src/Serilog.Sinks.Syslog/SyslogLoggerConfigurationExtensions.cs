@@ -14,6 +14,7 @@ using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Display;
+using Serilog.Sinks.Internal;
 using Serilog.Sinks.PeriodicBatching;
 using Serilog.Sinks.Syslog;
 
@@ -59,7 +60,7 @@ namespace Serilog
             if (!LocalSyslogService.IsAvailable)
             {
                 SelfLog.WriteLine("The LocalSyslog sink is only supported on Linux systems");
-                return default;
+                return loggerSinkConfig.Sink<NullSink>();
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
