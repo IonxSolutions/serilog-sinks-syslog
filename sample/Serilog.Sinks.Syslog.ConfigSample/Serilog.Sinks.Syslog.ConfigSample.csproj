@@ -2,12 +2,9 @@
 
   <PropertyGroup>
     <Description>Sample Console Application</Description>
-    <Authors>Ionx Solutions</Authors>
-    <Copyright>Copyright © Ionx Solutions 2018</Copyright>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net462</TargetFrameworks>
     <RuntimeIdentifiers>win-x86;win-x64;linux-x86;linux-x64</RuntimeIdentifiers>
-    <LangVersion>latest</LangVersion>
     <AssemblyName>Serilog.Sinks.Syslog.ConfigSample</AssemblyName>
     <RootNamespace>Serilog.Sinks.Syslog.ConfigSample</RootNamespace>
     <RepositoryType>git</RepositoryType>

@@ -2,11 +2,15 @@
 
   <PropertyGroup>
     <Description>Fully-featured Serilog sink that logs events to remote syslog servers using UDP, TCP, and TLS over TCP, and can also use POSIX libc syslog functions to write to the local syslog service on Linux systems. Both RFC3164 and RFC5424 format messages are supported.</Description>
-    <VersionPrefix>2.0.9</VersionPrefix>
-    <Authors>Ionx Solutions</Authors>
-    <Copyright>Copyright © Ionx Solutions 2018</Copyright>
-    <TargetFrameworks>net462;netstandard2.0;netcoreapp3.1</TargetFrameworks>
-    <LangVersion>latest</LangVersion>
+      
+    <!-- By targeting .NET Standard 2.0, an application can be written to any .NET version supported by
+    .NET Standard 2.0, as documented here:
+    https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0
+    So for example, .NET Framework 4.6.2+, .NET Core 2.0+, and .NET 5+ can use this package.
+    Since this code does not have any explicit dependencies for any of those .NET versions, there is no
+    need to have this project be multi-targeted. -->
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+      
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog</AssemblyName>
     <RootNamespace>Serilog</RootNamespace>
@@ -31,9 +35,6 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
     <PackageReference Include="Serilog" Version="2.5.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 

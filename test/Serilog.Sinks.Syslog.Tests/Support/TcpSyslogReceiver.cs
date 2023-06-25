@@ -23,7 +23,6 @@ namespace Serilog.Sinks.Syslog.Tests
     {
         private readonly TcpListener tcpListener;
         private readonly X509Certificate certificate;
-        private readonly SslProtocols secureProtocols;
         private readonly IPEndPoint ipEndPoint;
         private readonly CancellationToken cancellationToken;
         private readonly bool listenOnly;
@@ -31,11 +30,10 @@ namespace Serilog.Sinks.Syslog.Tests
         public event EventHandler<string> MessageReceived;
         public event EventHandler<X509Certificate2> ClientAuthenticated;
 
-        public TcpSyslogReceiver(X509Certificate certificate, SslProtocols secureProtocols,
+        public TcpSyslogReceiver(X509Certificate certificate,
              CancellationToken ct, bool listenOnly = false)
         {
             this.certificate = certificate;
-            this.secureProtocols = secureProtocols;
             this.cancellationToken = ct;
             this.listenOnly = listenOnly;
 
@@ -76,7 +74,7 @@ namespace Serilog.Sinks.Syslog.Tests
                     try
                     {
                         await sslStream.AuthenticateAsServerAsync(this.certificate, true,
-                            this.secureProtocols, false);
+                            SslProtocols.None, false);
                     }
                     catch (Exception ex)
                     {
@@ -135,7 +133,7 @@ namespace Serilog.Sinks.Syslog.Tests
 
                     _ = await stream.ReadAsync(buffer, 0, buffer.Length, this.cancellationToken);
                 }
-                catch (Exception)
+                catch
                 {
                     // Ignore and try reading again until the cancellation token is signaled,
                     // telling us to stop.

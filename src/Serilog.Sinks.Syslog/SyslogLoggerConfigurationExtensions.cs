@@ -8,7 +8,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Authentication;
 using Serilog.Configuration;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -143,9 +142,8 @@ namespace Serilog
         /// <param name="framingType">How to frame/delimit syslog messages for the wire</param>
         /// <param name="format">The syslog message format to be used</param>
         /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
-        /// <param name="secureProtocols">
-        /// SSL/TLS protocols to be used for a secure channel. Set to None for an unsecured connection
-        /// </param>
+        /// <param name="useTls">Set to <c>true</c> so that the TCP connection uses SSL/TLS encryption. Otherwise,
+        /// the data will be sent unencrypted.</param>
         /// <param name="certProvider">Optionally used to present the syslog server with a client certificate</param>
         /// <param name="certValidationCallback">
         /// Optional callback used to validate the syslog server's certificate. If null, the system default
@@ -162,7 +160,7 @@ namespace Serilog
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
             SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
-            SslProtocols secureProtocols = SslProtocols.Tls12, ICertificateProvider certProvider = null,
+            bool useTls = false, ICertificateProvider certProvider = null,
             RemoteCertificateValidationCallback certValidationCallback = null,
             string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
@@ -180,7 +178,7 @@ namespace Serilog
                 Port = port,
                 Formatter = messageFormatter,
                 Framer = new MessageFramer(framingType),
-                SecureProtocols = secureProtocols,
+                UseTls = useTls,
                 CertProvider = certProvider,
                 CertValidationCallback = certValidationCallback
             };
