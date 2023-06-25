@@ -37,6 +37,8 @@ namespace Serilog.Sinks.Syslog.Tests
             this.cancellationToken = ct;
             this.listenOnly = listenOnly;
 
+            SetAppContextDefaultForNet46TlsVersions();
+
             // In order to listen on both IPv4 and IPv6, if available, we must either specify IPv6Any for
             // the address and then manually set the DualMode property, or use the static TcpListener.Create()
             // method. The static method will automatically use IPv6Any and set the DualMode property of the
@@ -139,6 +141,41 @@ namespace Serilog.Sinks.Syslog.Tests
                     // telling us to stop.
                 }
             }
+        }
+
+        private void SetAppContextDefaultForNet46TlsVersions()
+        {
+            // You can read more about TLS best practices and the behavior of various .NET Framework versions:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls
+            //
+            // The current recommended best practice is to let the operating system settings decide which SSL/TLS
+            // version(s) to use/support. That means, whenever a method accepts a parameter for the SslProtocols
+            // enum, you should pass in SslProtocols.None.
+            //
+            // However, for .NET Framework versions prior to .NET 4.7, the behavior was the complete opposite.
+            // So when our tests run under .NET Framework 4.6.2 and we pass in SslProtocols.None, we get an exception
+            // stating it's not a valid value because for .NET Framework 4.6.2, the default was to not rely upon the
+            // operating system and instead require an explicit value to be passed in by the code.
+            //
+            // But now, the recommendation has changed. For .NET Framework 4.6 - 4.6.2, we should be overriding an
+            // AppContext setting to force the behavior to match that of newer .NET versions such that the operating
+            // system is in control of selecting what SSL/TLS protocol version to use.
+            //
+            // For .NET 4.6 - 4.6.2, see:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#for-net-framework-46---462-and-not-wcf
+            // Which then leads to:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#switchsystemnetdontenablesystemdefaulttlsversions
+            // That states the following:
+            // A value of false for Switch.System.Net.DontEnableSystemDefaultTlsVersions causes your app to allow the
+            // operating system to choose the protocol. A value of true causes your app to use protocols picked by the
+            // .NET Framework.
+            //
+            // If your app targets .NET Framework 4.7 or later versions, this switch defaults to false. That's a secure
+            // default that we recommend. If your app runs on .NET Framework 4.7 or later versions, but targets an
+            // earlier version, the switch defaults to true. In that case, you should explicitly set it to false.
+            #if NET462
+            AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);
+            #endif
         }
     }
 }

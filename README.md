@@ -1,6 +1,9 @@
 | :mega: Important notice if you're upgrading between 2.x and 3.x |
 |--------------|
 | If you're upgrading from 2.x to 3.x, and use the `SyslogTcpConfig` or `SyslogLoggerConfigurationExtensions.TcpSyslog()` extension method, there is a breaking change to the interface. The `SyslogTcpConfig.SecureProtocols` property has been replaced with just a boolean, `SyslogTcpConfig.UseTls`. Similarly, the `secureProtocols` parameter of the extension method has also been replaced with just a `useTls` boolean. If you were using either of those and passing in a value such as `SslProtocols.Tls12`, then you will simply pass in `true` for the new boolean value. If you were using `SslProtocols.None`, then you will pass in `false` for the new boolean value. |
+||
+| If you're using .NET Framework 4.6.2, please read the following [Transport Layer Security (TLS) best practices with the .NET Framework](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls), specifically, the section [For .NET Framework 4.6 - 4.6.2 and not WCF](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#for-net-framework-46---462-and-not-wcf). That leads to [Switch.System.Net.DontEnableSystemDefaultTlsVersions](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#switchsystemnetdontenablesystemdefaulttlsversions), in which it is recommended to set that switch value to `false`. This can be done in code with the following: ```AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);``` |
+
 
 # Serilog.Sinks.SyslogMessages
 
