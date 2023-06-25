@@ -237,9 +237,9 @@ namespace Serilog.Sinks.Syslog
                     // ErrorCode of ERROR_OPERATION_ABORTED is thrown as opposed to the ObjectDisposedException
                     // above. We want to catch and ignore this error as well as it means the timeout value
                     // has elapsed.
-                    var sex = ex.InnerException as SocketException;
+                    var socketEx = ex.InnerException as SocketException;
 
-                    if (sex == null || sex.SocketErrorCode != SocketError.OperationAborted)
+                    if (socketEx == null || socketEx.SocketErrorCode != SocketError.OperationAborted)
                     {
                         sslStream.Dispose();
                         baseStream.Dispose();
