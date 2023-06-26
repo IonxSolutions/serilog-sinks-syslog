@@ -173,9 +173,7 @@ namespace Serilog.Sinks.Syslog.Tests
             // If your app targets .NET Framework 4.7 or later versions, this switch defaults to false. That's a secure
             // default that we recommend. If your app runs on .NET Framework 4.7 or later versions, but targets an
             // earlier version, the switch defaults to true. In that case, you should explicitly set it to false.
-            #if NET462
             AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);
-            #endif
         }
     }
 }
