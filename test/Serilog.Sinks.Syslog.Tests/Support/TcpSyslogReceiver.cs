@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
+using Serilog.Debugging;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -174,6 +175,7 @@ namespace Serilog.Sinks.Syslog.Tests
             // earlier version, the switch defaults to true. In that case, you should explicitly set it to false.
             AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);
 
+            SelfLog.WriteLine("Writing registry....");
             #if NET462
             try
             {
@@ -183,7 +185,7 @@ namespace Serilog.Sinks.Syslog.Tests
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                SelfLog.WriteLine(ex.ToString());
             }
             #endif
         }
