@@ -37,8 +37,6 @@ namespace Serilog.Sinks.Syslog.Tests
             this.cancellationToken = ct;
             this.listenOnly = listenOnly;
 
-            SetAppContextDefaultForNet46TlsVersions();
-
             // In order to listen on both IPv4 and IPv6, if available, we must either specify IPv6Any for
             // the address and then manually set the DualMode property, or use the static TcpListener.Create()
             // method. The static method will automatically use IPv6Any and set the DualMode property of the
@@ -143,7 +141,7 @@ namespace Serilog.Sinks.Syslog.Tests
             }
         }
 
-        private void SetAppContextDefaultForNet46TlsVersions()
+        public static void SetAppContextDefaultForNet46TlsVersions()
         {
             // You can read more about TLS best practices and the behavior of various .NET Framework versions:
             // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls

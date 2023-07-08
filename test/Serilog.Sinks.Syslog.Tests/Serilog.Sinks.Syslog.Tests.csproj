@@ -37,9 +37,6 @@
     <None Update="Rfc5424Regex.txt" CopyToOutputDirectory="PreserveNewest" />
 
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="testhost.dll.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
 
     <Content Include="..\..\build\certs\*.p12">
       <Visible>false</Visible>
