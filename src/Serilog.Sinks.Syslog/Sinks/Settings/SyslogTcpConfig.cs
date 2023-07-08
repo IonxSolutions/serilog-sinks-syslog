@@ -5,7 +5,6 @@
 
 using System;
 using System.Net.Security;
-using System.Security.Authentication;
 
 namespace Serilog.Sinks.Syslog
 {
@@ -49,7 +48,8 @@ namespace Serilog.Sinks.Syslog
         /// <summary>
         /// If <c>true</c>, the connection to the Syslog server will be secured using SSL/TLS, as chosen by
         /// the operating system, while negotiating with the Syslog server. Note that the server must be
-        /// configured to support TLS in order for the connection to succeed.
+        /// configured to support TLS in order for the connection to succeed. If using .NET 4.6.2, please read
+        /// the Readme.md file for additional information.
         /// If set to <c>false</c>, the sink will connect to the Syslog server over an unsecure TCP connection.
         /// </summary>
         public bool UseTls { get; set; }

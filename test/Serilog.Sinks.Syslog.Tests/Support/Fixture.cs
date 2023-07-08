@@ -21,6 +21,7 @@ namespace Serilog.Sinks.Syslog.Tests
     {
         public AssemblyFixture(IMessageSink messageSink) : base(messageSink)
         {
+            // See the code comments in this method for more information.
             TcpSyslogReceiver.SetAppContextDefaultForNet46TlsVersions();
         }
     }
@@ -38,8 +39,6 @@ namespace Serilog.Sinks.Syslog.Tests
 
             File.Exists(ClientCertFilename).ShouldBeTrue("If not present, certificates can be generated using /build/scripts/generate-certs.cmd");
             File.Exists(ServerCertFilename).ShouldBeTrue("If not present, certificates can be generated using /build/scripts/generate-certs.cmd");
-
-            TcpSyslogReceiver.SetAppContextDefaultForNet46TlsVersions();
         }
 
         public static string ServerCertFilename => GetFullPath("server.p12");
