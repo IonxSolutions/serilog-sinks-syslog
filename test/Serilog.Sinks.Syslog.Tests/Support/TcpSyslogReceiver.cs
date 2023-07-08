@@ -183,7 +183,7 @@ namespace Serilog.Sinks.Syslog.Tests
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex);
+                Console.WriteLine(ex);
             }
             #endif
         }
