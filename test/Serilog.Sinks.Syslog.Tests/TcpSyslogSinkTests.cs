@@ -46,7 +46,7 @@ namespace Serilog.Sinks.Syslog.Tests
             // test classes are run in parallel. So we can't have multiple unit test classes enabling and
             // disabling the Serilog Selflog at the same time. So for any unit test classes that utilize
             // this, we will have to instruct xUnit to run them serially with the [Collection] attribute.
-            Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); });
+            Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); Console.WriteLine(x); });
         }
 
         public void Dispose()
