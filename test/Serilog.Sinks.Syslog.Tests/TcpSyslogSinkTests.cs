@@ -29,8 +29,6 @@ namespace Serilog.Sinks.Syslog.Tests
 
         public TcpSyslogSinkTests(ITestOutputHelper output)
         {
-            TcpSyslogReceiver.SetAppContextDefaultForNet46TlsVersions();
-
             this.tcpConfig = new SyslogTcpConfig
             {
                 KeepAlive = true,

@@ -13,6 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -172,6 +173,19 @@ namespace Serilog.Sinks.Syslog.Tests
             // default that we recommend. If your app runs on .NET Framework 4.7 or later versions, but targets an
             // earlier version, the switch defaults to true. In that case, you should explicitly set it to false.
             AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);
+
+            #if NET462
+            try
+            {
+                using RegistryKey registryKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", true);
+
+                registryKey.SetValue("SystemDefaultTlsVersions", 1, RegistryValueKind.DWord);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
+            #endif
         }
     }
 }
