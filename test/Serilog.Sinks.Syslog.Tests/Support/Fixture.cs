@@ -9,6 +9,23 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using Serilog.Core;
 using Shouldly;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
+// Need to set the SystemDefaultTlsVersions before any tests run.
+// See https://stackoverflow.com/a/53143426/8169136
+[assembly: Xunit.TestFramework("Serilog.Sinks.Syslog.Tests.AssemblyFixture", "Serilog.Sinks.Syslog.Tests")]
+namespace Serilog.Sinks.Syslog.Tests
+{
+    public sealed class AssemblyFixture : XunitTestFramework
+    {
+        public AssemblyFixture(IMessageSink messageSink) : base(messageSink)
+        {
+            // See the code comments in this method for more information.
+            TcpSyslogReceiver.SetAppContextDefaultForNet46TlsVersions();
+        }
+    }
+}
 
 namespace Serilog.Sinks.Syslog.Tests
 {

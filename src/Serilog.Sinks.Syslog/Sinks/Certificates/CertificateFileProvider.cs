@@ -22,7 +22,11 @@ namespace Serilog.Sinks.Syslog
             if (!File.Exists(filename))
                 throw new FileNotFoundException($"Certificate {filename} could not be found");
 
-            this.Certificate = new X509Certificate2(filename, password, X509KeyStorageFlags.PersistKeySet);
+            // Do not persist the private key. We do not have any code here to delete it. So the file ends up
+            // being orphaned in the C:\Users\<user>\AppData\Roaming\Microsoft\Crypto\RSA\S-1-5-21-... folder.
+            // Since we're not using this certificate in any HTTP connection or anything like that, we don't
+            // need to persist it.
+            this.Certificate = new X509Certificate2(filename, password);
 
             // You can't authenticate with a certificate unless you have the private key
             if (!this.Certificate.HasPrivateKey)

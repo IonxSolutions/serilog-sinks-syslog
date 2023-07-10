@@ -1,3 +1,10 @@
+| :mega: Important notice if you're upgrading between 2.x and 3.x |
+|--------------|
+| If you're upgrading from 2.x to 3.x, and use the `SyslogTcpConfig` or `SyslogLoggerConfigurationExtensions.TcpSyslog()` extension method, there is a breaking change to the interface. The `SyslogTcpConfig.SecureProtocols` property has been replaced with just a boolean, `SyslogTcpConfig.UseTls`. Similarly, the `secureProtocols` parameter of the extension method has also been replaced with just a `useTls` boolean. If you were using either of those and passing in a value such as `SslProtocols.Tls12`, then you will simply pass in `true` for the new boolean value. If you were using `SslProtocols.None`, then you will pass in `false` for the new boolean value. |
+||
+| If you're using .NET Framework 4.6.2, please read the following [Transport Layer Security (TLS) best practices with the .NET Framework](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls), specifically, the section [For .NET Framework 4.6 - 4.6.2 and not WCF](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#for-net-framework-46---462-and-not-wcf). That leads to [Switch.System.Net.DontEnableSystemDefaultTlsVersions](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#switchsystemnetdontenablesystemdefaulttlsversions), in which it is recommended to set that switch value to `false`. This can be done in code with the following: ```AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);``` |
+
+
 # Serilog.Sinks.SyslogMessages
 
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/IonxSolutions/serilog-sinks-syslog?svg=true&branch=master)](https://ci.appveyor.com/project/ionx-solutions/serilog-sinks-syslog)
@@ -85,7 +92,7 @@ var tcpConfig = new SyslogTcpConfig
     Port = 6514,
     Formatter = new Rfc5424Formatter(),
     Framer = new MessageFramer(FramingType.OCTET_COUNTING),
-    SecureProtocols = SslProtocols.Tls11 | SslProtocols.Tls12,
+    UseTls = true,
     CertProvider = new CertificateFileProvider("MyClientCert.pfx"),
     CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
     {
@@ -101,7 +108,7 @@ var log = new LoggerConfiguration()
 
 `SyslogTcpConfig` properties:
 
-**SecureProtocols**: defines which protocols can be negotiated with the syslog server. If `SecureProtocols` is set to `SecureProtocols.None`, SSL/TLS will not be used.
+**UseTls**: If `true`, the connection to the Syslog server will be secured using SSL/TLS, as chosen by the operating system, while negotiating with the Syslog server. Note that the server must be configured to support TLS in order for the connection to succeed. If set to `false`, the sink will connect to the Syslog server over an unsecure TCP connection.
 
 **CertProvider**: can optionally be set if the syslog server requires client authentication. Various `ICertificateProvider`s are provided, to load a certificate from disk, the Certificate Store, or for you to pass in a certificate from any other source.
 

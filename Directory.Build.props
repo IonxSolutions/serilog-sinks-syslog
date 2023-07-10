@@ -1,0 +1,17 @@
+<Project>
+    <PropertyGroup>
+        <VersionPrefix>3.0.0</VersionPrefix>
+        <Authors>Ionx Solutions</Authors>
+        <Copyright>Copyright © Ionx Solutions 2018</Copyright>
+    
+        <!-- Set an explicit language version, which should be one that is supported by the official build system.
+        This is considered a best practice that can help prevent hard to diagnose runtime errors if someone with a
+        newer language support uses a new language feature, but that language feature isn't supported by the underlying
+        target framework version. Since our target framework is .NET Standard 2.0, it supports up to C# language version
+        7.3. See the following:
+        https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
+        However, we have been using newer language version features without any problems. So we will set the version
+        to match those features that we are using. -->
+        <LangVersion>9.0</LangVersion>
+    </PropertyGroup>
+</Project>

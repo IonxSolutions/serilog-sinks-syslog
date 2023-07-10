@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog.Context;
@@ -47,7 +46,7 @@ namespace Serilog.Sinks.Syslog.Sample
                 Port = 6514,
                 Formatter = new Rfc5424Formatter(templateFormatter: tcpTemplateFormatter),
                 Framer = new MessageFramer(FramingType.OCTET_COUNTING),
-                SecureProtocols = SslProtocols.Tls11 | SslProtocols.Tls12,
+                UseTls = true,
                 CertProvider = new CertificateFileProvider(certFilename, String.Empty),
                 CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                 {

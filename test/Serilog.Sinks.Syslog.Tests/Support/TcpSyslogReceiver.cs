@@ -23,7 +23,6 @@ namespace Serilog.Sinks.Syslog.Tests
     {
         private readonly TcpListener tcpListener;
         private readonly X509Certificate certificate;
-        private readonly SslProtocols secureProtocols;
         private readonly IPEndPoint ipEndPoint;
         private readonly CancellationToken cancellationToken;
         private readonly bool listenOnly;
@@ -31,11 +30,10 @@ namespace Serilog.Sinks.Syslog.Tests
         public event EventHandler<string> MessageReceived;
         public event EventHandler<X509Certificate2> ClientAuthenticated;
 
-        public TcpSyslogReceiver(X509Certificate certificate, SslProtocols secureProtocols,
+        public TcpSyslogReceiver(X509Certificate certificate,
              CancellationToken ct, bool listenOnly = false)
         {
             this.certificate = certificate;
-            this.secureProtocols = secureProtocols;
             this.cancellationToken = ct;
             this.listenOnly = listenOnly;
 
@@ -76,7 +74,7 @@ namespace Serilog.Sinks.Syslog.Tests
                     try
                     {
                         await sslStream.AuthenticateAsServerAsync(this.certificate, true,
-                            this.secureProtocols, false);
+                            SslProtocols.None, false);
                     }
                     catch (Exception ex)
                     {
@@ -135,12 +133,45 @@ namespace Serilog.Sinks.Syslog.Tests
 
                     _ = await stream.ReadAsync(buffer, 0, buffer.Length, this.cancellationToken);
                 }
-                catch (Exception)
+                catch
                 {
                     // Ignore and try reading again until the cancellation token is signaled,
                     // telling us to stop.
                 }
             }
+        }
+
+        public static void SetAppContextDefaultForNet46TlsVersions()
+        {
+            // You can read more about TLS best practices and the behavior of various .NET Framework versions:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls
+            //
+            // The current recommended best practice is to let the operating system settings decide which SSL/TLS
+            // version(s) to use/support. That means, whenever a method accepts a parameter for the SslProtocols
+            // enum, you should pass in SslProtocols.None.
+            //
+            // However, for .NET Framework versions prior to .NET 4.7, the behavior was the complete opposite.
+            // So when our tests run under .NET Framework 4.6.2 and we pass in SslProtocols.None, we get an exception
+            // stating it's not a valid value because for .NET Framework 4.6.2, the default was to not rely upon the
+            // operating system and instead require an explicit value to be passed in by the code.
+            //
+            // But now, the recommendation has changed. For .NET Framework 4.6 - 4.6.2, we should be overriding an
+            // AppContext setting to force the behavior to match that of newer .NET versions such that the operating
+            // system is in control of selecting what SSL/TLS protocol version to use.
+            //
+            // For .NET 4.6 - 4.6.2, see:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#for-net-framework-46---462-and-not-wcf
+            // Which then leads to:
+            // https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls#switchsystemnetdontenablesystemdefaulttlsversions
+            // That states the following:
+            // A value of false for Switch.System.Net.DontEnableSystemDefaultTlsVersions causes your app to allow the
+            // operating system to choose the protocol. A value of true causes your app to use protocols picked by the
+            // .NET Framework.
+            //
+            // If your app targets .NET Framework 4.7 or later versions, this switch defaults to false. That's a secure
+            // default that we recommend. If your app runs on .NET Framework 4.7 or later versions, but targets an
+            // earlier version, the switch defaults to true. In that case, you should explicitly set it to false.
+            AppContext.SetSwitch("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false);
         }
     }
 }

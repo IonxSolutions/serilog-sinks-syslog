@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +25,6 @@ namespace Serilog.Sinks.Syslog.Tests
         private X509Certificate2 serverCertificate;
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly SyslogTcpConfig tcpConfig;
-        private const SslProtocols SECURE_PROTOCOLS = SslProtocols.Tls11 | SslProtocols.Tls12;
         private readonly AsyncCountdownEvent countdown = new AsyncCountdownEvent(NumberOfEventsToSend);
 
         public TcpSyslogSinkTests(ITestOutputHelper output)
@@ -72,7 +70,7 @@ namespace Serilog.Sinks.Syslog.Tests
         public async Task Should_send_logs_to_secure_tcp_syslog_service()
         {
             this.tcpConfig.KeepAlive = false; // Just to test the negative path
-            this.tcpConfig.SecureProtocols = SECURE_PROTOCOLS;
+            this.tcpConfig.UseTls = true;
             this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
             this.tcpConfig.CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
@@ -82,7 +80,7 @@ namespace Serilog.Sinks.Syslog.Tests
             };
 
             // Start a simple TCP syslog server that will capture all received messaged
-            var receiver = new TcpSyslogReceiver(ServerCert, SECURE_PROTOCOLS, this.cts.Token);
+            var receiver = new TcpSyslogReceiver(ServerCert, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
@@ -124,11 +122,11 @@ namespace Serilog.Sinks.Syslog.Tests
         public async Task Should_timeout_when_attempting_secure_tcp_to_non_secure_syslog_service()
         {
             // This is all that is needed for the client to attempt to initiate a TLS connection.
-            this.tcpConfig.SecureProtocols = SECURE_PROTOCOLS;
+            this.tcpConfig.UseTls = true;
 
             // As for the server, note that we aren't passing in the server certificate and we're
             // instructing it to just listen and read and ignore any data.
-            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token, true);
+            var receiver = new TcpSyslogReceiver(null, this.cts.Token, true);
 
             this.tcpConfig.Host = IPAddress.Loopback.ToString();
             this.tcpConfig.Port = receiver.IPEndPoint.Port;
@@ -147,7 +145,7 @@ namespace Serilog.Sinks.Syslog.Tests
         private async Task SendUnsecureAsync(IPAddress address)
         {
             // Start a simple TCP syslog server that will capture all received messaged
-            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token);
+            var receiver = new TcpSyslogReceiver(null, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
@@ -189,7 +187,7 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public async Task Extension_method_with_batchConfig()
         {
-            var receiver = new TcpSyslogReceiver(null, SECURE_PROTOCOLS, this.cts.Token);
+            var receiver = new TcpSyslogReceiver(null, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
@@ -207,7 +205,6 @@ namespace Serilog.Sinks.Syslog.Tests
 
             logger.WriteTo.TcpSyslog(IPAddress.Loopback.ToString(),
                 receiver.IPEndPoint.Port,
-                secureProtocols: SslProtocols.None,
                 batchConfig: batchConfig);
 
             var log = logger.CreateLogger();

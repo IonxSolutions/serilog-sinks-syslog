@@ -33,7 +33,6 @@ namespace Serilog.Sinks.Syslog
         private readonly MessageFramer framer;
         private readonly bool enableKeepAlive;
         private readonly bool useTls;
-        private readonly SslProtocols secureProtocols;
         private readonly X509Certificate2Collection clientCert;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
         private readonly bool checkCertificateRevocation;
@@ -50,8 +49,7 @@ namespace Serilog.Sinks.Syslog
             this.Port = config.Port;
             this.enableKeepAlive = config.KeepAlive;
 
-            this.secureProtocols = config.SecureProtocols;
-            this.useTls = config.SecureProtocols != SslProtocols.None;
+            this.useTls = config.UseTls;
             this.certValidationCallback = config.CertValidationCallback;
             this.checkCertificateRevocation = config.CheckCertificateRevocation;
             this.tlsAuthenticationTimeout = config.TlsAuthenticationTimeout;
@@ -223,7 +221,7 @@ namespace Serilog.Sinks.Syslog
                     // Note that with the .NET 5.0 version of this method and .NET Core 2.1+ of this
                     // method, a cancellation token can be passed directly in as a parameter.
                     await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
-                        this.secureProtocols, this.checkCertificateRevocation).ConfigureAwait(false);
+                        SslProtocols.None, this.checkCertificateRevocation).ConfigureAwait(false);
 
                     // There is a race condition to this point and when the cancellation token's callback
                     // may be called versus when we're able to dispose of it to prevent the callback.
@@ -232,6 +230,22 @@ namespace Serilog.Sinks.Syslog
                 {
                     // We'd throw the same exception here as we have below in the race condition check,
                     // so we can just ignore it here for now.
+                }
+                catch (IOException ex)
+                {
+                    // When running under .NET 6.0, an IOException with an inner SocketException with an
+                    // ErrorCode of ERROR_OPERATION_ABORTED is thrown as opposed to the ObjectDisposedException
+                    // above. We want to catch and ignore this error as well as it means the timeout value
+                    // has elapsed.
+                    var socketEx = ex.InnerException as SocketException;
+
+                    if (socketEx == null || socketEx.SocketErrorCode != SocketError.OperationAborted)
+                    {
+                        sslStream.Dispose();
+                        baseStream.Dispose();
+
+                        throw;
+                    }
                 }
             }
 
@@ -250,7 +264,12 @@ namespace Serilog.Sinks.Syslog
             }
 
             if (!sslStream.IsAuthenticated)
+            {
+                sslStream.Dispose();
+                baseStream.Dispose();
+
                 throw new AuthenticationException("Unable to authenticate secure syslog server");
+            }
 
             return sslStream;
         }
