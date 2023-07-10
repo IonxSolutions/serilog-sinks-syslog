@@ -144,6 +144,7 @@ namespace Serilog
         /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="useTls">Set to <c>true</c> so that the TCP connection uses SSL/TLS encryption. Otherwise,
         /// the data will be sent unencrypted.</param>
+        /// <param name="allowIPv6">Set to <c>false</c> to disable IPv6</param>
         /// <param name="certProvider">Optionally used to present the syslog server with a client certificate</param>
         /// <param name="certValidationCallback">
         /// Optional callback used to validate the syslog server's certificate. If null, the system default
@@ -158,16 +159,16 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
-            string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
-            SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
-            bool useTls = false, ICertificateProvider certProvider = null,
-            RemoteCertificateValidationCallback certValidationCallback = null,
-            string outputTemplate = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
-            PeriodicBatchingSinkOptions batchConfig = null,
-            string sourceHost = null,
-            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null)
+                                                    string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
+                                                    SyslogFormat format = SyslogFormat.RFC5424, Facility facility = Facility.Local0,
+                                                    bool useTls = false, bool allowIPv6 = true, ICertificateProvider certProvider = null,
+                                                    RemoteCertificateValidationCallback certValidationCallback = null,
+                                                    string outputTemplate = null,
+                                                    LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+                                                    string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
+                                                    PeriodicBatchingSinkOptions batchConfig = null,
+                                                    string sourceHost = null,
+                                                    Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null)
         {
             var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName,
                 sourceHost, severityMapping, formatter);
@@ -179,6 +180,7 @@ namespace Serilog
                 Formatter = messageFormatter,
                 Framer = new MessageFramer(framingType),
                 UseTls = useTls,
+                AllowIPv6 = allowIPv6,
                 CertProvider = certProvider,
                 CertValidationCallback = certValidationCallback
             };

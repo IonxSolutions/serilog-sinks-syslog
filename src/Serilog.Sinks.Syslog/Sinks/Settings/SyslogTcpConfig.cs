@@ -55,6 +55,13 @@ namespace Serilog.Sinks.Syslog
         public bool UseTls { get; set; }
 
         /// <summary>
+        /// If <c>true</c>, the sink will use the Socket.OSSupportsIPv6 setting to determine if
+        /// it should connect to the Syslog server using IPv6. If <c>false</c>, it will only use IPv4.
+        /// Defaults to <c>true</c>.
+        /// </summary>
+        public bool AllowIPv6 { get; set; } = true;
+
+        /// <summary>
         /// When <see cref="UseTls"/> is <c>true</c>, CertProvider can be used to present a client certificate
         /// to the syslog server. Leave as null if no client certificate is required
         /// </summary>
