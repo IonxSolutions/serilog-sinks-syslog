@@ -148,7 +148,11 @@ namespace Serilog.Sinks.Syslog
                 var ipv6Enabled = this.allowIPv6 && Socket.OSSupportsIPv6;
 
                 this.client = new TcpClient(ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
-                this.client.Client.DualMode = ipv6Enabled;
+
+                // Use of dual mode property throws exception if IPv6 is not available
+                if (ipv6Enabled) {
+                    this.client.Client.DualMode = ipv6Enabled;
+                }
 
                 // If the Host name specified is already an IP address, then that is what will be returned.
                 var hostAddresses = await Dns.GetHostAddressesAsync(this.Host).ConfigureAwait(false);
