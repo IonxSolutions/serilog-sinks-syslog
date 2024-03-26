@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
@@ -46,15 +47,19 @@ namespace Serilog
         /// <param name="appName">The name of the application. Defaults to the current process name</param>
         /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
-        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+        /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
         /// <param name="severityMapping">Provide your own method to override the default mapping logic of a Serilog <see cref="LogEventLevel"/>
         /// to syslog <see cref="Severity"/>.</param>
         /// <param name="formatter">The message formatter</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string appName = null, Facility facility = Facility.Local0, string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            Func<LogEventLevel, Severity> severityMapping = null,ITextFormatter formatter = null)
+            Func<LogEventLevel, Severity> severityMapping = null,ITextFormatter formatter = null,
+            LoggingLevelSwitch levelSwitch = null)
         {
             if (!LocalSyslogService.IsAvailable)
             {
@@ -69,7 +74,7 @@ namespace Serilog
 
             var sink = new SyslogLocalSink(messageFormatter, syslogService);
 
-            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel);
+            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel, levelSwitch);
         }
 
         /// <summary>
@@ -83,11 +88,14 @@ namespace Serilog
         /// <param name="facility"><inheritdoc cref="Facility" path="/summary"/> Defaults to <see cref="Facility.Local0"/>.</param>
         /// <param name="batchConfig">Batching configuration</param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
-        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+        /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
         /// <param name="severityMapping"><inheritdoc cref="LocalSyslog" path="/param[@name='severityMapping']"/></param>
         /// <param name="formatter">The message formatter</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
@@ -95,7 +103,8 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
             string sourceHost = null,
-            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null)
+            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null,
+            LoggingLevelSwitch levelSwitch = null)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
@@ -107,7 +116,7 @@ namespace Serilog
             var syslogUdpSink = new SyslogUdpSink(endpoint, messageFormatter);
             var sink = new PeriodicBatchingSink(syslogUdpSink, batchConfig);
 
-            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel);
+            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel, levelSwitch);
         }
 
         /// <summary>
@@ -116,10 +125,14 @@ namespace Serilog
         /// <param name="loggerSinkConfig">The logger configuration</param>
         /// <param name="config">Defines how to interact with the syslog server</param>
         /// <param name="batchConfig">Batching configuration</param>
-        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+        /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             SyslogTcpConfig config, PeriodicBatchingSinkOptions batchConfig = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            LoggingLevelSwitch levelSwitch = null)
         {
             if (String.IsNullOrWhiteSpace(config.Host))
                 throw new ArgumentException(nameof(config.Host));
@@ -129,7 +142,7 @@ namespace Serilog
             var syslogTcpSink = new SyslogTcpSink(config);
             var sink = new PeriodicBatchingSink(syslogTcpSink, batchConfig);
 
-            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel);
+            return loggerSinkConfig.Sink(sink, restrictedToMinimumLevel, levelSwitch);
         }
 
         /// <summary>
@@ -150,12 +163,15 @@ namespace Serilog
         /// will be used
         /// </param>
         /// <param name="outputTemplate">A message template describing the output messages</param>
-        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+        /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <param name="batchConfig">Configuration for the Periodic Batching Sink, type of PeriodicBatchingSinkOptions. Has the fields batchSizeLimit (Integer, defaults to 1000), batchPeriod (TimeSpan, defaults to 2 seconds) and batchQueueLimit (Nullable[int], defaults to 100.000</param>
         /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
         /// <param name="severityMapping"><inheritdoc cref="LocalSyslog" path="/param[@name='severityMapping']"/></param>
         /// <param name="formatter">The message formatter</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -167,7 +183,8 @@ namespace Serilog
             string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
             PeriodicBatchingSinkOptions batchConfig = null,
             string sourceHost = null,
-            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null)
+            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null,
+            LoggingLevelSwitch levelSwitch = null)
         {
             var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName,
                 sourceHost, severityMapping, formatter);
@@ -185,7 +202,7 @@ namespace Serilog
 
             batchConfig ??= DefaultBatchOptions;
 
-            return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel);
+            return TcpSyslog(loggerSinkConfig, config, batchConfig, restrictedToMinimumLevel, levelSwitch);
         }
 
         /// <summary>An alternative mapping function that can be specified in any of the 'severityMapping' parameters.
