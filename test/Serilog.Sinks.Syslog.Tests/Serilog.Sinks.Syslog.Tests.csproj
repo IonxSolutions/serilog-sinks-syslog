@@ -4,8 +4,8 @@
     between frameworks. For example, when handling a socket connection timeout, the exception handling logic
     needed to be different for .NET 6.0. So it would be good to include as many frameworks here as we are
     willing to support. -->
-    <TargetFrameworks>net462;netcoreapp2.2;netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
-      
+    <TargetFrameworks>net462;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog.Tests</AssemblyName>
     <RootNamespace>Serilog.Sinks.Syslog.Tests</RootNamespace>
@@ -14,14 +14,14 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Shouldly" Version="3.0.2" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
-    <PackageReference Include="FakeItEasy" Version="4.9.2" />
-    <PackageReference Include="Serilog" Version="2.5.0" />
-    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Shouldly" Version="4.2.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="FakeItEasy" Version="8.3.0" />
+    <PackageReference Include="Serilog" Version="4.0.2" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">

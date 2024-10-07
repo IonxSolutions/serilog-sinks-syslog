@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Sample Console Application</Description>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net462</TargetFrameworks>
+    <TargetFrameworks>net462;net8.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x86;win-x64;linux-x86;linux-x64</RuntimeIdentifiers>
     <AssemblyName>Serilog.Sinks.Syslog.Sample</AssemblyName>
     <RootNamespace>Serilog.Sinks.Syslog.Sample</RootNamespace>
@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="2.6.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="Serilog" Version="4.0.2" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0" />
     <ProjectReference Include="..\..\src\Serilog.Sinks.Syslog\Serilog.Sinks.Syslog.csproj" />
   </ItemGroup>
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Fully-featured Serilog sink that logs events to remote syslog servers using UDP, TCP, and TLS over TCP, and can also use POSIX libc syslog functions to write to the local syslog service on Linux systems. Both RFC3164 and RFC5424 format messages are supported.</Description>
-      
+
     <!-- While we don't have any framework version specific code, by targeting and building an assembly
     specifically for all of the following, which are the frameworks we support and test on, it allows the
     consumer to choose the most specific for their application, thereby minimizing additional references
@@ -10,14 +10,14 @@
     since it is supported by all versions of .NET that we are aiming to support, namely .NET Framework
     4.6.2+, .NET Core 2.0+, and .NET 5+, as is documented here:
     https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0
-    
+
     If we only did that, it would force the inclusion of the .NET Standard 2.0 System.* assemblies into
     the person's project. So for example, if the person had just a .NET Framework 4.6.2 application, that
     would typically compile to a single binary, but if this assembly were only compiled to just the .NET
     Standard 2.0 framework, the person's output directory would contain over 100 additional DLLs of the
     .NET Standard 2.0 framework. That's probably not what they were expecting/wanting. -->
-    <TargetFrameworks>net462;netstandard2.0;netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
-      
+    <TargetFrameworks>net462;netstandard2.0;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog</AssemblyName>
     <RootNamespace>Serilog</RootNamespace>
@@ -40,9 +40,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-    <PackageReference Include="Serilog" Version="2.5.0" />
-    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Serilog" Version="4.0.0" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
