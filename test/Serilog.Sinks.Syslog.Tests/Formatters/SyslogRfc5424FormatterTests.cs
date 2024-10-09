@@ -98,6 +98,7 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Groups["proc"].Value.ToInt().ShouldBeGreaterThan(0);
             match.Groups["msgid"].Value.ShouldBe(SOURCE_CONTEXT);
             match.Groups["sd"].Value.ShouldNotBe(NILVALUE);
+            match.Groups["sdid"].Value.ShouldBe("meta");
             match.Groups["msg"].Value.ShouldBe($"This is a test message with val \"{testVal}\"");
         }
 
@@ -192,6 +193,28 @@ namespace Serilog.Sinks.Syslog.Tests
             match.Success.ShouldBeTrue();
 
             match.Groups["host"].Value.ShouldBe(hostname);
+        }
+
+        [Fact]
+        public void Should_format_message_with_custom_sdid()
+        {
+            var customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME);
+
+            var properties = new List<LogEventProperty>
+            {
+                new LogEventProperty("MyProperty", new ScalarValue("Lorem Ipsum")),
+            };
+
+            var template = new MessageTemplateParser().Parse("This is a test message with val {MyProperty}");
+            var warnEvent = new LogEvent(this.timestamp, LogEventLevel.Warning, null, template, properties);
+
+            var formatted = customFormatter.FormatMessage(warnEvent);
+            this.output.WriteLine($"RFC5424 with structured data: {formatted}");
+
+            var match = this.regex.Match(formatted);
+            match.Success.ShouldBeTrue();
+
+            match.Groups["sdid"].Value.ShouldBe("ourSDID@32473");
         }
     }
 }

@@ -4,7 +4,7 @@
     between frameworks. For example, when handling a socket connection timeout, the exception handling logic
     needed to be different for .NET 6.0. So it would be good to include as many frameworks here as we are
     willing to support. -->
-    <TargetFrameworks>net462;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net462;net6.0;net8.0</TargetFrameworks>
 
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AssemblyName>Serilog.Sinks.Syslog.Tests</AssemblyName>
