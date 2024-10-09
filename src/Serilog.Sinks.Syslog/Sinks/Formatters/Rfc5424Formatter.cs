@@ -40,6 +40,7 @@ namespace Serilog.Sinks.Syslog
 
         private readonly string applicationName;
         private readonly string messageIdPropertyName;
+        private readonly string structuredDataId;
 
         internal const string DefaultMessageIdPropertyName = "SourceContext";
 
@@ -53,11 +54,13 @@ namespace Serilog.Sinks.Syslog
         /// <param name="messageIdPropertyName">Where the Id number of the message will be derived from. Defaults to the "SourceContext" property of the syslog event. Property name and value must be all printable ASCII characters with max length of 32.</param>
         /// <param name="sourceHost"><inheritdoc cref="SyslogFormatterBase.Host" path="/summary"/></param>
         /// <param name="severityMapping"><inheritdoc cref="SyslogLoggerConfigurationExtensions.LocalSyslog" path="/param[@name='severityMapping']"/></param>
+        /// <param name="structuredDataId">Structured Data ID name (SD-ID)</param>
         public Rfc5424Formatter(Facility facility = Facility.Local0, string applicationName = null,
             ITextFormatter templateFormatter = null,
             string messageIdPropertyName = DefaultMessageIdPropertyName,
             string sourceHost = null,
-            Func<LogEventLevel, Severity> severityMapping = null)
+            Func<LogEventLevel, Severity> severityMapping = null,
+            string structuredDataId = null)
             : base(facility, templateFormatter, sourceHost, severityMapping)
         {
             this.applicationName = applicationName ?? ProcessName;
@@ -69,6 +72,10 @@ namespace Serilog.Sinks.Syslog
 
             // Conform to the RFC
             this.messageIdPropertyName = (messageIdPropertyName ?? DefaultMessageIdPropertyName)
+                .AsPrintableAscii()
+                .WithMaxLength(32);
+
+            this.structuredDataId = (structuredDataId ?? STRUCTURED_DATA_ID)
                 .AsPrintableAscii()
                 .WithMaxLength(32);
         }
@@ -113,13 +120,13 @@ namespace Serilog.Sinks.Syslog
                 : NILVALUE;
         }
 
-        private static string RenderStructuredData(LogEvent logEvent)
+        private string RenderStructuredData(LogEvent logEvent)
         {
             var properties = logEvent.Properties.Select(kvp =>
                 new KeyValuePair<string, string>(RenderPropertyKey(kvp.Key), RenderPropertyValue(kvp.Value)));
 
             var structuredDataKvps = String.Join(" ", properties.Select(t => $@"{t.Key}=""{t.Value}"""));
-            var structuredData = String.IsNullOrEmpty(structuredDataKvps) ? NILVALUE : $"[{STRUCTURED_DATA_ID} {structuredDataKvps}]";
+            var structuredData = String.IsNullOrEmpty(structuredDataKvps) ? NILVALUE : $"[{this.structuredDataId} {structuredDataKvps}]";
 
             return structuredData;
         }

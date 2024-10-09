@@ -198,7 +198,8 @@ namespace Serilog.Sinks.Syslog.Tests
         [Fact]
         public void Should_format_message_with_custom_sdid()
         {
-            var customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME);
+            const string sdId = "ourSDID@32473";
+            var customFormatter = new Rfc5424Formatter(Facility.User, APP_NAME, structuredDataId: sdId);
 
             var properties = new List<LogEventProperty>
             {
@@ -214,7 +215,7 @@ namespace Serilog.Sinks.Syslog.Tests
             var match = this.regex.Match(formatted);
             match.Success.ShouldBeTrue();
 
-            match.Groups["sdid"].Value.ShouldBe("ourSDID@32473");
+            match.Groups["sdid"].Value.ShouldBe(sdId);
         }
     }
 }
