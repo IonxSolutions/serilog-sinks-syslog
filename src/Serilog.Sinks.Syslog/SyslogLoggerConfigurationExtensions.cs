@@ -54,7 +54,7 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
-        /// <param name="structuredDataId">The structured data ID (SD-ID). Defaults to "meta".</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string appName = null, Facility facility = Facility.Local0, string outputTemplate = null,
@@ -97,7 +97,7 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
-        /// <param name="structuredDataId">The structured data ID (SD-ID). Defaults to "meta".</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
@@ -175,7 +175,7 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
-        /// <param name="structuredDataId">The structured data ID (SD-ID). Defaults to "meta".</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
