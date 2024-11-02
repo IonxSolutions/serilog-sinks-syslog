@@ -54,12 +54,13 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration LocalSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string appName = null, Facility facility = Facility.Local0, string outputTemplate = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             Func<LogEventLevel, Severity> severityMapping = null,ITextFormatter formatter = null,
-            LoggingLevelSwitch levelSwitch = null)
+            LoggingLevelSwitch levelSwitch = null, string structuredDataId = null)
         {
             if (!LocalSyslogService.IsAvailable)
             {
@@ -68,7 +69,7 @@ namespace Serilog
             }
 
             var messageFormatter = GetFormatter(SyslogFormat.Local, appName, facility, outputTemplate,
-                severityMapping: severityMapping, formatter: formatter);
+                severityMapping: severityMapping, formatter: formatter, structuredDataId: structuredDataId);
             var syslogService = new LocalSyslogService(facility, appName);
             syslogService.Open();
 
@@ -96,6 +97,7 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <see cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration UdpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 514, string appName = null, SyslogFormat format = SyslogFormat.RFC3164,
@@ -104,13 +106,14 @@ namespace Serilog
             string messageIdPropertyName = Rfc5424Formatter.DefaultMessageIdPropertyName,
             string sourceHost = null,
             Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null,
-            LoggingLevelSwitch levelSwitch = null)
+            LoggingLevelSwitch levelSwitch = null,
+            string structuredDataId = null)
         {
             if (String.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(nameof(host));
 
             batchConfig ??= DefaultBatchOptions;
-            var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost, severityMapping, formatter);
+            var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName, sourceHost, severityMapping, formatter, structuredDataId);
             var endpoint = ResolveIP(host, port);
 
             var syslogUdpSink = new SyslogUdpSink(endpoint, messageFormatter);
@@ -172,6 +175,7 @@ namespace Serilog
         /// <param name="formatter">The message formatter</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
         /// to be changed at runtime.</param>
+        /// <param name="structuredDataId">The structured data ID (SD-ID). Only applicable when <paramref name="format"/> is <see cref="SyslogFormat.RFC5424"/>. Defaults to "meta".</param>
         /// <seealso cref="!:https://github.com/serilog/serilog/wiki/Formatting-Output"/>
         public static LoggerConfiguration TcpSyslog(this LoggerSinkConfiguration loggerSinkConfig,
             string host, int port = 1468, string appName = null, FramingType framingType = FramingType.OCTET_COUNTING,
@@ -184,10 +188,11 @@ namespace Serilog
             PeriodicBatchingSinkOptions batchConfig = null,
             string sourceHost = null,
             Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null,
-            LoggingLevelSwitch levelSwitch = null)
+            LoggingLevelSwitch levelSwitch = null,
+            string structuredDataId = null)
         {
             var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName,
-                sourceHost, severityMapping, formatter);
+                sourceHost, severityMapping, formatter, structuredDataId);
 
             var config = new SyslogTcpConfig
             {
@@ -228,7 +233,9 @@ namespace Serilog
             string outputTemplate,
             string messageIdPropertyName = null,
             string sourceHost = null,
-            Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null)
+            Func<LogEventLevel, Severity> severityMapping = null,
+            ITextFormatter formatter = null,
+            string structuredDataId = null)
         {
             ITextFormatter templateFormatter;
 
@@ -246,7 +253,7 @@ namespace Serilog
             return format switch
             {
                 SyslogFormat.RFC3164 => new Rfc3164Formatter(facility, appName, templateFormatter, sourceHost, severityMapping),
-                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName, sourceHost, severityMapping),
+                SyslogFormat.RFC5424 => new Rfc5424Formatter(facility, appName, templateFormatter, messageIdPropertyName, sourceHost, severityMapping, structuredDataId),
                 SyslogFormat.Local => new LocalFormatter(facility, templateFormatter, severityMapping),
                 _ => throw new ArgumentException($"Invalid format: {format}")
             };
