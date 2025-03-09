@@ -50,6 +50,8 @@ namespace Serilog.Sinks.Syslog.Tests
             // disabling the Serilog Selflog at the same time. So for any unit test classes that utilize
             // this, we will have to instruct xUnit to run them serially with the [Collection] attribute.
             Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); });
+
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
         }
 
         public void Dispose()

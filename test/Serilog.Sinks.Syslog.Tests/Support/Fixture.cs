@@ -74,5 +74,24 @@ namespace Serilog.Sinks.Syslog.Tests
         // that option is not available on all .NET Framework versions being targeted.
         private static X509Certificate2 LoadCertFromFile(string filename)
             => new X509Certificate2(filename, String.Empty);
+
+        /// <summary>Workaround for unit test failure. See https://stackoverflow.com/a/73914330/8169136.
+        /// As mentioned in other posts on that page, this may not be a problem on every machine. Tried
+        /// a few of the other suggestions on the page as well, but this is the only one that worked.</summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <returns>The already loaded version of System.Runtime.CompilerServices.Unsafe, regardless of
+        /// the actual version.</returns>
+        public static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            var name = new AssemblyName(args.Name);
+
+            if (name.Name == "System.Runtime.CompilerServices.Unsafe")
+            {
+                return typeof(System.Runtime.CompilerServices.Unsafe).Assembly;
+            }
+
+            return null;
+        }
     }
 }
