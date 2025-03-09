@@ -14,6 +14,9 @@ using Xunit;
 using Shouldly;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
 using Xunit.Abstractions;
+using Serilog.Events;
+using Serilog.Formatting.Json;
+using System.Net.Security;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -67,11 +70,19 @@ namespace Serilog.Sinks.Syslog.Tests
         }
 
         [Fact]
-        public async Task Should_send_logs_to_secure_tcp_syslog_service()
+        public async Task Should_send_logs_to_secure_tcp_syslog_service_using_certificateSelectionCallback()
         {
             this.tcpConfig.KeepAlive = false; // Just to test the negative path
             this.tcpConfig.UseTls = true;
-            this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
+            this.tcpConfig.CertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificates, acceptableIssuers) =>
+            {
+                // For our unit test purposes, we'll just use the CertificateProvider to return the test
+                // certificate. However, your implementation of this callback method is free to do whatever
+                // it wants. Most likely not using the built-in CertificateProvider.
+                var certProvider = new CertificateProvider(ClientCert);
+
+                return certProvider.Certificate;
+            };
             this.tcpConfig.CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
                 // So we know this callback was called
@@ -79,7 +90,7 @@ namespace Serilog.Sinks.Syslog.Tests
                 return true;
             };
 
-            // Start a simple TCP syslog server that will capture all received messaged
+            // Start a simple TCP syslog server that will capture all received messages.
             var receiver = new TcpSyslogReceiver(ServerCert, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
@@ -119,6 +130,146 @@ namespace Serilog.Sinks.Syslog.Tests
         }
 
         [Fact]
+        public async Task Should_send_logs_to_secure_tcp_syslog_service()
+        {
+            this.tcpConfig.KeepAlive = false; // Just to test the negative path
+            this.tcpConfig.UseTls = true;
+            this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
+            this.tcpConfig.CertValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                // So we know this callback was called
+                this.serverCertificate = new X509Certificate2(certificate);
+                return true;
+            };
+
+            // Start a simple TCP syslog server that will capture all received messages.
+            var receiver = new TcpSyslogReceiver(ServerCert, this.cts.Token);
+            receiver.MessageReceived += (_, msg) =>
+            {
+                this.messagesReceived.Add(msg);
+                this.countdown.Signal();
+            };
+
+            // When a client connects, capture the client certificate they presented
+            receiver.ClientAuthenticated += (_, cert) => this.clientCertificate = cert;
+
+            this.tcpConfig.Host = IPAddress.Loopback.ToString();
+            this.tcpConfig.Port = receiver.IPEndPoint.Port;
+
+            var sink = new SyslogTcpSink(this.tcpConfig);
+
+            // Generate and send 3 log events
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
+            await sink.EmitBatchAsync(logEvents);
+
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
+
+            // The server should have received all 3 messages sent by the sink
+            this.messagesReceived.Count.ShouldBe(logEvents.Length);
+            this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
+
+            // The sink should have presented the client certificate to the server
+            this.clientCertificate.Thumbprint
+                .ShouldBe(ClientCert.Thumbprint, StringCompareShould.IgnoreCase);
+
+            // The sink should have seen the server's certificate in the validation callback
+            this.serverCertificate.Thumbprint
+                .ShouldBe(ServerCert.Thumbprint, StringCompareShould.IgnoreCase);
+
+            sink.Dispose();
+            this.cts.Cancel();
+        }
+
+        [Fact]
+        public void CertProvider_and_CertificateSelectionCallback_are_mutually_exclusive()
+        {
+            this.tcpConfig.UseTls = true;
+
+            // Specifying both should throw an exception.
+            this.tcpConfig.CertProvider = new CertificateProvider(ClientCert);
+            this.tcpConfig.CertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificates, acceptableIssuers) =>
+            {
+                // This method's implementation isn't important.
+                var certProvider = new CertificateProvider(ClientCert);
+
+                return certProvider.Certificate;
+            };
+
+            Assert.Throws<ArgumentException>(() => new SyslogTcpSink(this.tcpConfig));
+        }
+
+        [Fact]
+        public async Task Extension_method_parameter_order()
+        {
+            // Start a simple TCP syslog server that will capture all received messages. This needs
+            // to be SSL based, in order to specify all the parameters in the extension method.
+            var receiver = new TcpSyslogReceiver(ServerCert, this.cts.Token);
+            receiver.MessageReceived += (_, msg) =>
+            {
+                this.messagesReceived.Add(msg);
+                this.countdown.Signal();
+            };
+
+            // When a client connects, capture the client certificate they presented
+            receiver.ClientAuthenticated += (_, cert) => this.clientCertificate = cert;
+
+            var logger = new LoggerConfiguration();
+
+            // Specify every single parameter, implicitly, as the order cannot change between releases. While it
+            // may be possible for the test to still pass if the parameters are changed, it's probably unlikely.
+            logger.WriteTo.TcpSyslog(IPAddress.Loopback.ToString(),
+                receiver.IPEndPoint.Port,
+                "some application name",
+                FramingType.OCTET_COUNTING,
+                SyslogFormat.RFC5424,
+                Facility.Local0, true,
+                new CertificateProvider(ClientCert),
+                (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    // So we know this callback was called
+                    this.serverCertificate = new X509Certificate2(certificate);
+                    return true;
+                },
+                "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+                LogEventLevel.Debug,
+                "SourceContext",
+                SyslogLoggerConfigurationExtensions.DefaultBatchOptions,
+                "source host",
+                (logEventLevel) => Severity.Debug,
+                new JsonFormatter(),
+                levelSwitch: null,
+                "meta",
+                (LocalCertificateSelectionCallback)null)
+                .MinimumLevel.Verbose();
+
+            var log = logger.CreateLogger();
+
+            var logEvents = Some.LogEvents(NumberOfEventsToSend);
+
+            foreach (var item in logEvents)
+            {
+                log.Write(item);
+            }
+
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
+
+            // The server should have received all 3 messages
+            this.messagesReceived.Count.ShouldBe(logEvents.Length);
+
+            // The sink should have presented the client certificate to the server
+            this.clientCertificate.Thumbprint
+                .ShouldBe(ClientCert.Thumbprint, StringCompareShould.IgnoreCase);
+
+            // The sink should have seen the server's certificate in the validation callback
+            this.serverCertificate.Thumbprint
+                .ShouldBe(ServerCert.Thumbprint, StringCompareShould.IgnoreCase);
+
+            this.cts.Cancel();
+        }
+
+        [Fact]
         public async Task Should_timeout_when_attempting_secure_tcp_to_non_secure_syslog_service()
         {
             // This is all that is needed for the client to attempt to initiate a TLS connection.
@@ -144,7 +295,7 @@ namespace Serilog.Sinks.Syslog.Tests
 
         private async Task SendUnsecureAsync(IPAddress address)
         {
-            // Start a simple TCP syslog server that will capture all received messaged
+            // Start a simple TCP syslog server that will capture all received messages.
             var receiver = new TcpSyslogReceiver(null, this.cts.Token);
             receiver.MessageReceived += (_, msg) =>
             {
