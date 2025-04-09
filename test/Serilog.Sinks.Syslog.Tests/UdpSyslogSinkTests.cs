@@ -14,6 +14,8 @@ using Shouldly;
 using Serilog.Events;
 using Xunit.Abstractions;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
+using Serilog.Parsing;
+using Serilog.Debugging;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -37,6 +39,8 @@ namespace Serilog.Sinks.Syslog.Tests
             // disabling the Serilog Selflog at the same time. So for any unit test classes that utilize
             // this, we will have to instruct xUnit to run them serially with the [Collection] attribute.
             Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); });
+
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
         }
 
         public void Dispose()
@@ -301,17 +305,66 @@ namespace Serilog.Sinks.Syslog.Tests
             await TestLoggerFromExtensionMethod(logger, receiver, altLogEvents: logEvents, altPriority: 128);
         }
 
+        [Fact]
+        public async Task Extension_method_config_with_Rfc3164_format_and_fatal_log_level_exception()
+        {
+            var receiver = new UdpSyslogReceiver(this.cts.Token);
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.UdpSyslog(IPAddress.Loopback.ToString(),
+                receiver.ListeningIPEndPoint.Port,
+                format: SyslogFormat.RFC3164,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .MinimumLevel.Verbose();
+
+            // We will only be sending/testing a single event, but the countdown is expecting 3. Signal it
+            // twice now so we don't have to wait for the timeout.
+            this.countdown.Signal();
+            this.countdown.Signal();
+
+            try
+            {
+                DivideByZero();
+
+                // We should not get here. A DivideByZeroException should be thrown, handled, and logged below.
+            }
+            catch (Exception ex)
+            {
+                // The TestLoggerFromExtensionMethod() method performs a check and expects this text to be matched
+                // at the end of the string. Well, since we are doing an exception, the exception will be at the
+                // end of the string, and we cannot possibly match it. So a bit of a hack is to just specify the
+                // empty string, which will make it/allow it to successfully match anything.
+                var expectedText = new MessageTemplateParser().Parse("");
+
+                var le = new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Fatal, ex, expectedText, Enumerable.Empty<LogEventProperty>());
+
+                await TestLoggerFromExtensionMethod(logger, receiver, 1, new[] { le }, altPriority: 128);
+            }
+        }
+
+        private static int DivideByZero()
+        {
+            // Just an additional method to be called, so as to increase the depth of the stack trace of the exception.
+            var i = 0;
+            var j = 42;
+            var k = j / i;
+
+            return k;
+        }
+
         private async Task TestLoggerFromExtensionMethod(LoggerConfiguration logger, UdpSyslogReceiver receiver, int expected = NumberOfEventsToSend, LogEvent[] altLogEvents = null, string altPropName = null, int? altPriority = null)
         {
             receiver.MessageReceived += (_, msg) =>
             {
                 this.messagesReceived.Add(msg);
+                SelfLog.WriteLine(msg);
                 this.countdown.Signal();
             };
 
             var log = logger.CreateLogger();
 
-            var logEvents = altLogEvents ?? Some.LogEvents(NumberOfEventsToSend);
+            var logEvents = altLogEvents ?? Some.LogEvents(expected);
 
             foreach (var item in logEvents)
             {
@@ -326,7 +379,7 @@ namespace Serilog.Sinks.Syslog.Tests
             if (expected > 0)
             {
                 // The server should have received all 3 messages sent by the sink
-                this.messagesReceived.Count.ShouldBe(NumberOfEventsToSend);
+                this.messagesReceived.Count.ShouldBe(expected);
                 this.messagesReceived.ShouldAllBe(x => logEvents.Any(e => x.EndsWith(e.MessageTemplate.Text)));
             }
 

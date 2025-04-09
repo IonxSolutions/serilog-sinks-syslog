@@ -14,6 +14,9 @@ using Xunit;
 using Shouldly;
 using static Serilog.Sinks.Syslog.Tests.Fixture;
 using Xunit.Abstractions;
+using Serilog.Debugging;
+using Serilog.Events;
+using Serilog.Parsing;
 
 namespace Serilog.Sinks.Syslog.Tests
 {
@@ -47,6 +50,8 @@ namespace Serilog.Sinks.Syslog.Tests
             // disabling the Serilog Selflog at the same time. So for any unit test classes that utilize
             // this, we will have to instruct xUnit to run them serially with the [Collection] attribute.
             Serilog.Debugging.SelfLog.Enable(x => { output.WriteLine(x); System.Diagnostics.Debug.WriteLine(x); });
+
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
         }
 
         public void Dispose()
@@ -229,6 +234,72 @@ namespace Serilog.Sinks.Syslog.Tests
 
             log.Dispose();
             this.cts.Cancel();
+        }
+
+        [Fact]
+        public async Task Multiline_exception()
+        {
+            // Start a simple TCP syslog server that will capture all received messaged
+            var receiver = new TcpSyslogReceiver(null, this.cts.Token);
+            receiver.MessageReceived += (_, msg) =>
+            {
+                SelfLog.WriteLine(msg);
+                this.messagesReceived.Add(msg);
+                this.countdown.Signal();
+            };
+
+            var logger = new LoggerConfiguration();
+
+            logger.WriteTo.TcpSyslog(IPAddress.Loopback.ToString(),
+                receiver.IPEndPoint.Port,
+                framingType: FramingType.OCTET_COUNTING,
+                format: SyslogFormat.RFC5424,
+                facility: Facility.Local0,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .MinimumLevel.Verbose();
+
+            var log = logger.CreateLogger();
+
+            // We will only be sending/testing a single event, but the countdown is expecting 3. Signal it
+            // twice now so we don't have to wait for the timeout.
+            this.countdown.Signal();
+            this.countdown.Signal();
+
+            try
+            {
+                DivideByZero();
+
+                // We should not get here. A DivideByZeroException should be thrown, handled, and logged below.
+            }
+            catch (Exception ex)
+            {
+                var expectedText = new MessageTemplateParser().Parse("Test exception.");
+
+                var le = new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Fatal, ex, expectedText, Enumerable.Empty<LogEventProperty>());
+
+                log.Write(le);
+            }
+
+            log.Dispose();
+
+            // Wait until the server has received all the messages we sent, or the timeout expires
+            await this.countdown.WaitAsync(TimeoutInSeconds, this.cts.Token);
+
+            // The server should have received all 3 messages sent by the sink
+            this.messagesReceived.Count.ShouldBe(1);
+            this.messagesReceived.ShouldAllBe(x => x.Split('\r', '\n').Length > 1);
+
+            this.cts.Cancel();
+        }
+
+        private static int DivideByZero()
+        {
+            // Just an additional method to be called, so as to increase the depth of the stack trace of the exception.
+            var i = 0;
+            var j = 42;
+            var k = j / i;
+
+            return k;
         }
     }
 }
