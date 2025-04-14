@@ -56,7 +56,8 @@ namespace Serilog.Sinks.Syslog
 
         /// <summary>
         /// When <see cref="UseTls"/> is <c>true</c>, CertProvider can be used to present a client certificate
-        /// to the syslog server. Leave as null if no client certificate is required
+        /// to the syslog server. Leave as <c>null</c> if no client certificate is required. This is mutually
+        /// exclusive from <see cref="CertificateSelectionCallback"/>.
         /// </summary>
         public ICertificateProvider CertProvider { get; set; }
 
@@ -64,7 +65,25 @@ namespace Serilog.Sinks.Syslog
         /// Callback to validate the server's SSL certificate. If null, the system default will be used
         /// </summary>
         public RemoteCertificateValidationCallback CertValidationCallback { get; set; }
-        
+
+        /// <summary>
+        /// When <see cref="UseTls"/> is <c>true</c>, selects the local Secure Sockets Layer (SSL) certificate
+        /// used for authentication each time a connection is established. This is mutually exclusive from
+        /// <see cref="CertProvider"/>.
+        /// </summary>
+        /// <remarks>Same functionality as https://learn.microsoft.com/en-us/dotnet/api/system.net.security.localcertificateselectioncallback?view=net-10.0.
+        /// It will be passed directly into the <see cref="SslStream"/> constructor.
+        /// <para>
+        /// The <c>localCertificates</c> parameter of the callback method will always be an empty list,
+        /// as there won't be a certificate passed into the <see cref="SslStream.AuthenticateAsClientAsync"/>
+        /// method when utilizing this callback method.
+        /// </para>
+        /// <para>
+        /// This callback is typically invoked twice when establishing a connection to the server. During the
+        /// second callback, the <c>remoteCertificate</c> parameter should have a value.
+        /// </para></remarks>
+        public LocalCertificateSelectionCallback CertificateSelectionCallback { get; set; }
+
         /// <summary>
         /// When making a secure TCP connection, determines whether the server's certificate CRL, if
         /// specified in the CRL Distribution Point (CDP) extension of the certificate or any intermediate
