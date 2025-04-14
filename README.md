@@ -112,7 +112,9 @@ var log = new LoggerConfiguration()
 
 **CertProvider**: can optionally be set if the syslog server requires client authentication. Various `ICertificateProvider`s are provided, to load a certificate from disk, the Certificate Store, or for you to pass in a certificate from any other source.
 
-**CertValidationCallback**: can optionally be set if you want to perform your own authentication of the syslog server's certificate. If not set, the system default will be used (the certificate must chain to a trusted root in the Certificate Store).
+**CertificateSelectionCallback**: this can be used instead of the custom `CertProvider` which utilizes the .NET [LocalCertificateSelectionCallback]( https://learn.microsoft.com/en-us/dotnet/api/system.net.security.localcertificateselectioncallback?view=netframework-4.6.2) functionality used by things like the [SslStream](https://learn.microsoft.com/en-us/dotnet/api/system.net.security.sslstream?view=netframework-4.6.2), which is exactly what is used within this Serilog.Sinks.SyslogMessages component. You can look at the Unit Tests for an example.
+
+**CertValidationCallback**: can optionally be set if you want to perform your own validation of the syslog server's certificate. If not set, the system default will be used (the certificate must chain to a trusted root in the Certificate Store).
 
 ### Additional optional parameters
 
@@ -224,4 +226,4 @@ Rsyslog normally defaults to RFC3164 format messages, but can write RFC5424 form
 $ActionFileDefaultTemplate RSYSLOG_SyslogProtocol23Format
 ```
 
-_Copyright &copy; 2018 [Ionx Solutions](https://www.ionxsolutions.com) - Provided under the [Apache License, Version 2.0](http://apache.org/licenses/LICENSE-2.0.html)._
+_Copyright &copy; 2025 [Ionx Solutions](https://www.ionxsolutions.com) - Provided under the [Apache License, Version 2.0](http://apache.org/licenses/LICENSE-2.0.html)._
