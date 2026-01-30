@@ -189,7 +189,8 @@ namespace Serilog
             string sourceHost = null,
             Func<LogEventLevel, Severity> severityMapping = null, ITextFormatter formatter = null,
             LoggingLevelSwitch levelSwitch = null,
-            string structuredDataId = null)
+            string structuredDataId = null,
+            LocalCertificateSelectionCallback certificateSelectionCallback = null)
         {
             var messageFormatter = GetFormatter(format, appName, facility, outputTemplate, messageIdPropertyName,
                 sourceHost, severityMapping, formatter, structuredDataId);
@@ -202,7 +203,8 @@ namespace Serilog
                 Framer = new MessageFramer(framingType),
                 UseTls = useTls,
                 CertProvider = certProvider,
-                CertValidationCallback = certValidationCallback
+                CertValidationCallback = certValidationCallback,
+                CertificateSelectionCallback = certificateSelectionCallback
             };
 
             batchConfig ??= DefaultBatchOptions;

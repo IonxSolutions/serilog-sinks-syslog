@@ -33,8 +33,9 @@ namespace Serilog.Sinks.Syslog
         private readonly MessageFramer framer;
         private readonly bool enableKeepAlive;
         private readonly bool useTls;
-        private readonly X509Certificate2Collection clientCert;
+        private readonly ICertificateProvider certProvider;
         private readonly RemoteCertificateValidationCallback certValidationCallback;
+        private readonly LocalCertificateSelectionCallback certificateSelectionCallback;
         private readonly bool checkCertificateRevocation;
         private readonly TimeSpan tlsAuthenticationTimeout;
 
@@ -51,13 +52,17 @@ namespace Serilog.Sinks.Syslog
 
             this.useTls = config.UseTls;
             this.certValidationCallback = config.CertValidationCallback;
+            this.certificateSelectionCallback = config.CertificateSelectionCallback;
             this.checkCertificateRevocation = config.CheckCertificateRevocation;
             this.tlsAuthenticationTimeout = config.TlsAuthenticationTimeout;
 
-            if (config.CertProvider?.Certificate != null)
+            if (config.CertificateSelectionCallback != null && config.CertProvider != null)
             {
-                this.clientCert = new X509Certificate2Collection(new [] { config.CertProvider.Certificate });
+                throw new ArgumentException("Cannot specify both CertificateSelectionCallback and CertProvider at the same time. Use one or the other.");
             }
+
+            this.certProvider = config.CertProvider;
+            this.certificateSelectionCallback = config.CertificateSelectionCallback;
 
             // You can't set socket options *and* connect to an endpoint using a hostname - if
             // keep-alive is enabled, resolve the hostname to an IP
@@ -197,10 +202,7 @@ namespace Serilog.Sinks.Syslog
             if (!this.useTls)
                 return baseStream;
 
-            // Authenticate the server, using the provided callback if required
-            var sslStream = this.certValidationCallback != null
-                ? new SslStream(baseStream, true, this.certValidationCallback)
-                : new SslStream(baseStream, true);
+            var sslStream = new SslStream(baseStream, true, this.certValidationCallback, this.certificateSelectionCallback);
 
             // Authenticate the client, using the provided client certificate if required
             // Note: this method takes an X509CertificateCollection, rather than an X509Certificate,
@@ -227,7 +229,7 @@ namespace Serilog.Sinks.Syslog
                 {
                     // Note that with the .NET 5.0 version of this method and .NET Core 2.1+ of this
                     // method, a cancellation token can be passed directly in as a parameter.
-                    await sslStream.AuthenticateAsClientAsync(this.Host, this.clientCert,
+                    await sslStream.AuthenticateAsClientAsync(this.Host, GetCertificateCollection(),
                         SslProtocols.None, this.checkCertificateRevocation).ConfigureAwait(false);
 
                     // There is a race condition to this point and when the cancellation token's callback
@@ -279,6 +281,20 @@ namespace Serilog.Sinks.Syslog
             }
 
             return sslStream;
+        }
+
+        private X509CertificateCollection GetCertificateCollection()
+        {
+            // The constructor already checked to make sure the CertificateSelectionCallback and CertProvider
+            // were mutually exclusive. If the CertificateSelectionCallback is being used, then it has already
+            // been passed to the SslStream and will get called accordingly. We only want to return a certificate
+            // from here if using the CertProvider.
+            if (this.certProvider?.Certificate != null)
+            {
+                return new X509CertificateCollection(new[] { this.certProvider.Certificate });
+            }
+
+            return null;
         }
 
         private bool IsConnected()
